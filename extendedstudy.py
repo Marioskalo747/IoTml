@@ -37,8 +37,7 @@ CV_MODELS = ["RandomForest", "ExtraTrees", "XGBoost", "LightGBM", "CatBoost"] #s
 OUT_PATH = RESULTS_DIR / "extended_results.json"
 
 log = logging.getLogger("extended")
-logging.basicConfig( level=logging.INFO,format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[logging.StreamHandler(),logging.FileHandler(RESULTS_DIR / "extended.log",encoding="utf-8")])
+logging.basicConfig( level=logging.INFO,format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.StreamHandler(),logging.FileHandler(RESULTS_DIR / "extended.log",encoding="utf-8")])
 
 SINK: list[dict] = [] #every record of the study
 DONE: set[str] = set() #keys of already completed records
@@ -235,8 +234,7 @@ def part_d_cv(X_train, y_train, dataset, task, cap=CAP, cv_models=None):
                 m = metrics(res)
                 scores.append(m["f1_macro"])
                 #individual fold records for later plotting in SINK
-                rec = {"kind": "cv_fold", "dataset": dataset, "task": task, "model": model_name, "variant": str(i),
-                       **META.get((dataset, task), {}), **m, "train_time_s": t}
+                rec = {"kind": "cv_fold", "dataset": dataset, "task": task, "model": model_name, "variant": str(i), **META.get((dataset, task), {}), **m, "train_time_s": t}
                 SINK.append(rec)
                 fold_rows.append({"model": model_name, "fold": str(i), "f1_macro": m["f1_macro"]})
                 save()
