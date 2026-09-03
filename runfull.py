@@ -50,8 +50,7 @@ PHASES = [
 #Second protocol, run inside the same pipeline but write its own directories so it does not overwrite the main run
 TEMPORAL_ARM_DATASETS = ["bot_iot", "iot23"]
 #derived from whatever the base directories are
-TEMPORAL_ENV = {"IOT_IDS_SPLIT": "temporal",
-                "IOT_IDS_RESULTS_DIR": os.environ.get("IOT_IDS_RESULTS_DIR", "results") + "_temporal",
+TEMPORAL_ENV = {"IOT_IDS_SPLIT": "temporal", "IOT_IDS_RESULTS_DIR": os.environ.get("IOT_IDS_RESULTS_DIR", "results") + "_temporal",
                 "IOT_IDS_MODELS_DIR": os.environ.get("IOT_IDS_MODELS_DIR", "models") + "_temporal"}
 TEMPORAL_PHASES = [("temporal_run_all", [sys.executable, str(ROOT / "src" / "runall.py")] + TEMPORAL_ARM_DATASETS + ["--no-pooled"]),
     ("temporal_report_assets", [sys.executable, str(ROOT / "src" / "reportassets.py")]),
