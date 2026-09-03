@@ -121,8 +121,7 @@ def make_preprocessor(X: pd.DataFrame):
     port_cols = port_columns(num_cols)
     if port_cols:
         #keep_empty_features
-        port_pipe = Pipeline([("impute", SimpleImputer(strategy="median", keep_empty_features=True)),
-                              ("expand", FunctionTransformer(port_expand, feature_names_out=port_names))])
+        port_pipe = Pipeline([("impute", SimpleImputer(strategy="median", keep_empty_features=True)), ("expand", FunctionTransformer(port_expand, feature_names_out=port_names))])
         transformers.append(("port", port_pipe, port_cols))
     ct = ColumnTransformer(transformers, remainder="drop") #unused columns are dropped
     cast = FunctionTransformer(to_float64, feature_names_out="one-to-one")
@@ -183,7 +182,7 @@ def select_features(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr, method: str, k
 _SPLIT_AUDIT: dict = {} #dataset -> what the split actually did, dumped to split_audit.json
 
 '''Record what each split really produced'''
-def _record_split_audit(dataset, used, ts, y_tr, y_te):
+def record_split_audit(dataset, used, ts, y_tr, y_te):
     try:
         tr, te = set(pd.unique(y_tr.astype(str))), set(pd.unique(y_te.astype(str)))
         rec = {"split_mode_requested": SPLIT_MODE, "split_mode_used": used,
@@ -222,8 +221,7 @@ def _record_split_audit(dataset, used, ts, y_tr, y_te):
 '''What the split actually produced for a dataset, so every downstream table can carry it'''
 def split_meta(dataset, y_train=None, y_test=None):
     r = _SPLIT_AUDIT.get(str(dataset), {})
-    out = {"split_mode": r.get("split_mode_used") if r else None,
-           "n_test_classes": None, "classes_missing_from_train": None, "evaluable": None}
+    out = {"split_mode": r.get("split_mode_used") if r else None, "n_test_classes": None, "classes_missing_from_train": None, "evaluable": None}
     if y_train is None or y_test is None:
         return out
     tr = set(pd.unique(pd.Series(y_train).astype(str)))
@@ -258,8 +256,7 @@ def split(X, y, y_bin, dataset=None):
     _dedup_on = [c for c in X.columns if not str(c).startswith(WINDOW_PREFIXES)] or list(X.columns)
     _keep = ~X[_dedup_on].assign(_label=y.values).duplicated()
     if len(_dedup_on) != X.shape[1]:
-        _log.info("dedup on %d flow columns (%d windowed columns excluded): %d -> %d rows",
-                  len(_dedup_on), X.shape[1] - len(_dedup_on), len(X), int(_keep.sum()))
+        _log.info("dedup on %d flow columns (%d windowed columns excluded): %d -> %d rows", len(_dedup_on), X.shape[1] - len(_dedup_on), len(X), int(_keep.sum()))
     X, y, y_bin = X[_keep], y[_keep], y_bin[_keep]
     if ts is not None:
         ts = ts[_keep]
@@ -268,8 +265,7 @@ def split(X, y, y_bin, dataset=None):
     used = mode
     if mode == "temporal" and (ts is None or ts.notna().sum() < 10 or ts.nunique(dropna=True) < 2):
         used = "random"
-        _log.warning("%s: temporal split requested but no usable timestamp -> falling back to random",
-                     dataset or "dataset")
+        _log.warning("%s: temporal split requested but no usable timestamp -> falling back to random", dataset or "dataset")
     if used == "temporal":
         #oldest TEST_SIZE-complement in train, newest in test
         order = ts.fillna(ts.min() - 1).sort_values(kind="mergesort").index #stable: ties keep file order
@@ -277,17 +273,16 @@ def split(X, y, y_bin, dataset=None):
         tr_idx, te_idx = order[:cut], order[cut:]
         #safety net: a chronological cut can leave train with a single class (or none)
         if y.loc[tr_idx].nunique() < 2 or y.loc[te_idx].nunique() < 1:
-            _log.warning("%s: temporal cut leaves %d class(es) in train -> falling back to random",
-                         dataset or "dataset", y.loc[tr_idx].nunique())
+            _log.warning("%s: temporal cut leaves %d class(es) in train -> falling back to random", dataset or "dataset", y.loc[tr_idx].nunique())
             used = "random"
         else:
             X_tr, X_te = X.loc[tr_idx], X.loc[te_idx]
             y_tr, y_te = y.loc[tr_idx], y.loc[te_idx]
             y_bin_tr, y_bin_te = y_bin.loc[tr_idx], y_bin.loc[te_idx]
-            _record_split_audit(dataset, used, ts, y_tr, y_te)
+            record_split_audit(dataset, used, ts, y_tr, y_te)
     if used == "random":
         X_tr, X_te, y_tr, y_te, y_bin_tr, y_bin_te = train_test_split(X, y, y_bin, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y) #same class propotions in train and test
-        _record_split_audit(dataset, used, ts, y_tr, y_te)
+        record_split_audit(dataset, used, ts, y_tr, y_te)
     #The floor min(len(s), 1000) keeps small classes whole large classes downsampled proportionally
     if len(X_tr) > MAX_TRAIN_ROWS:
         before = y_tr.value_counts(normalize=True)
@@ -298,11 +293,9 @@ def split(X, y, y_bin, dataset=None):
         y_bin_tr = y_bin_tr.loc[idx.index]
         after = y_tr.value_counts(normalize=True)
         shift = float((after - before).reindex(before.index).abs().max())
-        _log.info("train cap %d -> %d rows; max class-share shift from the min-1000 floor: %+.4f",
-                  n_before, len(X_tr), shift)
+        _log.info("train cap %d -> %d rows; max class-share shift from the min-1000 floor: %+.4f", n_before, len(X_tr), shift)
         if shift > 0.01:
-            _log.warning("the capped training set is mildly rebalanced (max class-share shift %.4f): "
-                         "the 'none' imbalance strategy is not a pure unbalanced baseline", shift)
+            _log.warning("the capped training set is mildly rebalanced (max class-share shift %.4f): " "the 'none' imbalance strategy is not a pure unbalanced baseline", shift)
     X_tr, X_te = X_tr.copy(), X_te.copy()
     for c in X_tr.select_dtypes(include="object").columns:
         top = X_tr[c].value_counts().nlargest(30).index
