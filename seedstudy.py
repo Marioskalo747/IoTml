@@ -88,8 +88,7 @@ def main():
     #resume an interrupted run instead of starting over, the study can be stopped and restarted
     rows, done = load_partial()
     if rows:
-        log.info("resume: %d experiments already done, %d (dataset,seed,task) groups complete",
-                 len(rows), len(complete_groups(rows)))
+        log.info("resume: %d experiments already done, %d (dataset,seed,task) groups complete", len(rows), len(complete_groups(rows)))
     prog = Progress(max(len(wanted) * len(args.seeds), 1), phase="seed_study")
 
     try:
@@ -144,8 +143,7 @@ def main():
                             r = evaluate_model(pipe, X_te, a_te.astype(str), labels, proba=proba)
                             rows.append({"dataset": name, "task": task, "model": spec.name, "seed": seed, "train_rows": len(Xt), "test_rows": len(X_te), "train_time_s": dt,
                                          #the seed study reports 30 BoT-IoT rows whose test split holds a single class
-                                         **split_meta(name, a_tr, a_te),
-                                         **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "f1_weighted", "mcc", "g_mean")}})
+                                         **split_meta(name, a_tr, a_te), **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "f1_weighted", "mcc", "g_mean")}})
                             done.add((name, task, spec.name, seed))
                             del pipe
                         except Exception as e:
