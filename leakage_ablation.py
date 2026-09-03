@@ -29,8 +29,7 @@ DEFAULT_MODELS = ["RandomForest", "XGBoost", "LightGBM", "CatBoost"]
 log = logging.getLogger("leak")
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[logging.StreamHandler(),
-              logging.FileHandler(RESULTS_DIR / "leakage_ablation.log", encoding="utf-8")])
+    handlers=[logging.StreamHandler(), logging.FileHandler(RESULTS_DIR / "leakage_ablation.log", encoding="utf-8")])
 
 
 '''find port columns (shared definition, aggregates excluded)'''
@@ -46,8 +45,7 @@ def window_columns(cols):
     return [c for c in cols if str(c).startswith(("w5_", "w10_"))]
 
 #What removing a group can tell you
-GROUP_ROLE = {"ports": "shortcut_risk", "ip_aggregates": "shortcut_risk",
-              "window_context": "deployable_signal"}
+GROUP_ROLE = {"ports": "shortcut_risk", "ip_aggregates": "shortcut_risk", "window_context": "deployable_signal"}
 
 '''prepare train-test split for a dataset'''
 def load_split(name):
@@ -91,8 +89,7 @@ def main():
     prev_path = RESULTS_DIR / "leakage_ablation.json"
     if prev_path.exists():
         try:
-            out = [r for r in json.loads(prev_path.read_text(encoding="utf-8"))
-                   if r.get("dataset") not in wanted]
+            out = [r for r in json.loads(prev_path.read_text(encoding="utf-8")) if r.get("dataset") not in wanted]
             if out:
                 log.info("keeping %d rows from the previous run", len(out))
         except Exception as e:
@@ -121,8 +118,7 @@ def main():
             gc.collect()
             continue
 
-        log.info("%s (%d features): ports=%d, IP aggregates=%d, windowed=%d",
-                 name, X_tr.shape[1], len(pc), len(ac), len(wc))
+        log.info("%s (%d features): ports=%d, IP aggregates=%d, windowed=%d", name, X_tr.shape[1], len(pc), len(ac), len(wc))
         #every combination of model, task, and condition is a separate experiment
         for task, a_tr, a_te in (("multiclass", y_tr, y_te),("binary", yb_tr.map({0: "Benign", 1: "Attack"}),yb_te.map({0: "Benign", 1: "Attack"}))):
             labels = sorted(pd.unique(pd.concat([a_tr, a_te]).astype(str)))
@@ -137,15 +133,12 @@ def main():
                         Xb = X_te.drop(columns=drop) if drop else X_te
                         r, dt = fit_score(spec, Xa, a_tr, Xb, a_te, labels)
                         #which families were actually removed
-                        kinds = "+".join(k for k, present in (("ports", any(c in pc for c in drop)),
-                                                              ("ip_aggregates", any(c in ac for c in drop)),
+                        kinds = "+".join(k for k, present in (("ports", any(c in pc for c in drop)), ("ip_aggregates", any(c in ac for c in drop)),
                                                               ("window_context", any(c in wc for c in drop))) if present) or "none"
                         roles = "+".join(sorted({GROUP_ROLE[k] for k in kinds.split("+") if k in GROUP_ROLE})) or "none"
                         rec = {"dataset": name, "task": task, "model": mname,"condition": cond,
-                               **split_meta(name, a_tr, a_te),
-                               "n_dropped": len(set(drop)),"n_features": int(Xa.shape[1]), "train_time_s": dt,
-                               "dropped_kinds": kinds, "group_role": roles,
-                               "same_as_no_ports": bool(cond == "deployable" and not ac),
+                               **split_meta(name, a_tr, a_te), "n_dropped": len(set(drop)),"n_features": int(Xa.shape[1]), "train_time_s": dt,
+                               "dropped_kinds": kinds, "group_role": roles, "same_as_no_ports": bool(cond == "deployable" and not ac),
                                **{k: r[k] for k in ("accuracy", "balanced_accuracy","f1_macro", "mcc", "g_mean")}}
                         if cond == "full":
                             base = rec["f1_macro"] #record the baseline before ablation
