@@ -186,11 +186,11 @@ def main():
         for m in notes:
             print(f"  ·  {m}")
     for m in warningsm:  #warnings before problems
-        print(f"  ⚠  {m}")
+        print(f"  !!!  {m}")
     for m in problems:
-        print(f"  ✘  {m}")
+        print(f"  X  {m}")
     if not problems and not warningsm:
-        print("  ✔  no problems")
+        print("  no problems")
     print(f"{'='*72}")
     sys.exit(1 if problems else 0) #problems are considered failure
 
