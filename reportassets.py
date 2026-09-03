@@ -52,8 +52,7 @@ def best_models_table(df: pd.DataFrame):
     champ[cols].to_csv(RESULTS_DIR / "table_best_models.csv", index=False) #table with default hyperparameters
     if "tuned" in df.columns:
         _d = df[~df.tuned]
-        (_d.loc[_d.groupby(["dataset", "task"])["f1_macro"].idxmax()][cols]
-           .to_csv(RESULTS_DIR / "table_best_models_default_only.csv", index=False))
+        (_d.loc[_d.groupby(["dataset", "task"])["f1_macro"].idxmax()][cols] .to_csv(RESULTS_DIR / "table_best_models_default_only.csv", index=False))
     return champ
 
 '''Detailed per-class tables for champion models'''
@@ -119,9 +118,7 @@ def times_table(df: pd.DataFrame):
 
 '''Flat dump of every record'''
 def summary_csv(res: list[dict]):
-    flat = pd.DataFrame([{k: v for k, v in r.items()
-                          if k not in ("per_class", "confusion_matrix", "labels", "params")}
-                         for r in res])
+    flat = pd.DataFrame([{k: v for k, v in r.items() if k not in ("per_class", "confusion_matrix", "labels", "params")} for r in res])
     flat.to_csv(RESULTS_DIR / "summary.csv", index=False)
     return flat
 
