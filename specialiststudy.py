@@ -34,9 +34,7 @@ TRANSFER_CAP = 40000     #rows per class for the cross-dataset transfer matrix
 OUT = RESULTS_DIR / "specialist_study.json"
 
 log = logging.getLogger("specialist")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
-                    handlers=[logging.StreamHandler(),
-                              logging.FileHandler(RESULTS_DIR / "specialist_study.log", encoding="utf-8")])
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.StreamHandler(), logging.FileHandler(RESULTS_DIR / "specialist_study.log", encoding="utf-8")])
 
 
 '''Lets the verified metric code in evaluate_model score predictions assembled by hand'''
@@ -52,9 +50,7 @@ class _Fixed:
 def cap(X, y, n=SPEC_TRAIN_CAP, floor=MIN_CLASS_TRAIN):
     if len(X) <= n:
         return X, y
-    idx = (pd.Series(range(len(X)), index=X.index).groupby(y, group_keys=False)
-           .apply(lambda g: g.sample(n=min(len(g), max(round(len(g) * n / len(X)), floor)),
-                                     random_state=RANDOM_STATE)))
+    idx = (pd.Series(range(len(X)), index=X.index).groupby(y, group_keys=False) .apply(lambda g: g.sample(n=min(len(g), max(round(len(g) * n / len(X)), floor)), random_state=RANDOM_STATE)))
     return X.loc[idx.index], y.loc[idx.index]
 
 
@@ -94,8 +90,7 @@ def part_a_cascade(X_tr, X_te, y_tr, y_te, yb_tr, yb_te, name, labels, rows):
     single = fit(STAGE2_MODEL, Xc, yc, len(labels))
     if single is not None:
         r = evaluate_model(single, X_te, y_te.astype(str), labels)
-        rows.append({"part": "A_cascade", "dataset": name, "gate": "none (single model)",
-                     "threshold": None, "sent_to_stage2": 1.0,
+        rows.append({"part": "A_cascade", "dataset": name, "gate": "none (single model)", "threshold": None, "sent_to_stage2": 1.0,
                      **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "mcc")}})
         log.info("  [A] %s single model: f1_macro=%.4f", name, r["f1_macro"])
         del single
@@ -134,13 +129,9 @@ def part_a_cascade(X_tr, X_te, y_tr, y_te, yb_tr, yb_te, name, labels, rows):
             if flags.any():
                 pred[flags] = s2_pred[flags]
             r = evaluate_model(_Fixed(pred), X_te, y_te.astype(str), labels)
-            rows.append({"part": "A_cascade", "dataset": name, "gate": gate_name,
-                         "threshold": float(f"{thr:.6g}"), "calibrated_1pct_train_fpr": bool(calibrated),
-                         "sent_to_stage2": float(flags.mean()),
-                         #what the alert budget actually cost on the test split
-                         "test_benign_forwarded": (float(flags[te_benign].mean())
-                                                   if te_benign.any() else None),
-                         **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "mcc")}})
+            rows.append({"part": "A_cascade", "dataset": name, "gate": gate_name, "threshold": float(f"{thr:.6g}"), "calibrated_1pct_train_fpr": bool(calibrated),
+                         "sent_to_stage2": float(flags.mean()), #what the alert budget actually cost on the test split
+                         "test_benign_forwarded": (float(flags[te_benign].mean()) if te_benign.any() else None), **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "mcc")}})
         log.info("  [A] %s gate=%s: %d operating points measured", name, gate_name, len(thrs))
         del gate
         gc.collect()
@@ -201,8 +192,7 @@ def part_b_specialists(X_tr, X_te, y_tr, y_te, name, labels, rows):
                      "specialist_precision": p2, "specialist_recall": r2, "specialist_f1": f2,
                      "delta_f1": f2 - f1, "mcnemar_p": p_val,
                      "only_single_correct": n10, "only_specialist_correct": n01})
-        log.info("  [B] %s/%s: single f1=%.4f specialist f1=%.4f (%+.4f, p=%s)",
-                 name, cls, f1, f2, f2 - f1, f"{p_val:.3g}" if p_val is not None else "n/a")
+        log.info("  [B] %s/%s: single f1=%.4f specialist f1=%.4f (%+.4f, p=%s)", name, cls, f1, f2, f2 - f1, f"{p_val:.3g}" if p_val is not None else "n/a")
         del spec
         gc.collect()
 
@@ -210,14 +200,12 @@ def part_b_specialists(X_tr, X_te, y_tr, y_te, name, labels, rows):
 '''for each attack class, which dataset is the best place to learn it from'''
 def part_c_transfer(rows):
     cache = RESULTS_DIR / "common_cache"
-    frames = {n: pd.read_pickle(cache / f"{n}.pkl") for n in available_datasets()
-              if (cache / f"{n}.pkl").exists()}
+    frames = {n: pd.read_pickle(cache / f"{n}.pkl") for n in available_datasets() if (cache / f"{n}.pkl").exists()}
     if len(frames) < 2:
         log.warning("  [C] need at least two cached datasets, found %d", len(frames))
         return
     for n, d in frames.items():
-        d[COMMON_FEATURES] = (d[COMMON_FEATURES].astype(np.float64)
-                              .replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-1e12, 1e12))
+        d[COMMON_FEATURES] = (d[COMMON_FEATURES].astype(np.float64).replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-1e12, 1e12))
         frames[n] = d[~d.duplicated(subset=COMMON_FEATURES + ["label"])]  #same dedup rule as split()
     for target, tgt in frames.items():
         for source, src in frames.items():
@@ -229,20 +217,16 @@ def part_c_transfer(rows):
                 continue
             s = src[src["label"].isin(shared)]
             t = tgt[tgt["label"].isin(shared)]
-            s = s.groupby("label", group_keys=False).apply(
-                lambda g: g.sample(min(len(g), TRANSFER_CAP), random_state=RANDOM_STATE))
+            s = s.groupby("label", group_keys=False).apply(lambda g: g.sample(min(len(g), TRANSFER_CAP), random_state=RANDOM_STATE))
             clf = RandomForestClassifier(n_estimators=150, random_state=RANDOM_STATE, n_jobs=-1)
             clf.fit(s[COMMON_FEATURES], s["label"])
             r = evaluate_model(clf, t[COMMON_FEATURES], t["label"].astype(str), shared)
             for pc in r["per_class"]:
                 if pc["support"] == 0:
                     continue  #the class exists in the source but has no rows in this target
-                rows.append({"part": "C_transfer", "source": source, "target": target,
-                             "class": pc["class"], "support": pc["support"],
-                             "precision": pc["precision"], "recall": pc["recall"], "f1": pc["f1"],
-                             "n_train": int(len(s))})
-            log.info("  [C] %s -> %s: %d shared classes, f1_macro=%.4f",
-                     source, target, len(shared), r["f1_macro"])
+                rows.append({"part": "C_transfer", "source": source, "target": target,"class": pc["class"], "support": pc["support"],
+                             "precision": pc["precision"], "recall": pc["recall"], "f1": pc["f1"],"n_train": int(len(s))})
+            log.info("  [C] %s -> %s: %d shared classes, f1_macro=%.4f", source, target, len(shared), r["f1_macro"])
             del clf
             gc.collect()
 
@@ -283,8 +267,7 @@ def main():
         gc.collect()
         labels = sorted(pd.unique(pd.concat([y_tr, y_te]).astype(str)))
         meta = split_meta(name, y_tr, y_te)
-        log.info("%s: train %d / test %d, %d classes, split=%s evaluable=%s",
-                 name, len(X_tr), len(X_te), len(labels), meta["split_mode"], meta["evaluable"])
+        log.info("%s: train %d / test %d, %d classes, split=%s evaluable=%s", name, len(X_tr), len(X_te), len(labels), meta["split_mode"], meta["evaluable"])
         before = len(rows)
         try:
             if "A" in args.parts:
@@ -316,9 +299,7 @@ def main():
         return
     OUT.write_text(json.dumps(rows, indent=1, default=str), encoding="utf-8")
     d = pd.DataFrame(rows)
-    for part, fname in (("A_cascade", "table_cascade.csv"),
-                        ("B_specialist", "table_specialists.csv"),
-                        ("C_transfer", "table_class_transfer.csv")):
+    for part, fname in (("A_cascade", "table_cascade.csv"),("B_specialist", "table_specialists.csv"),("C_transfer", "table_class_transfer.csv")):
         sub = d[d.part == part].dropna(axis=1, how="all")
         if not sub.empty:
             sub.to_csv(RESULTS_DIR / fname, index=False)
@@ -327,10 +308,8 @@ def main():
     tr = d[d.part == "C_transfer"] if "part" in d.columns else pd.DataFrame()
     if not tr.empty:
         best = tr.loc[tr.groupby(["target", "class"])["f1"].idxmax()]
-        best[["target", "class", "source", "f1", "support"]].to_csv(
-            RESULTS_DIR / "table_best_source_per_class.csv", index=False)
-        log.info("\nbest source per (target, class):\n%s",
-                 best[["target", "class", "source", "f1"]].round(4).to_string(index=False))
+        best[["target", "class", "source", "f1", "support"]].to_csv(RESULTS_DIR / "table_best_source_per_class.csv", index=False)
+        log.info("\nbest source per (target, class):\n%s",best[["target", "class", "source", "f1"]].round(4).to_string(index=False))
     prog.finish(f"specialist_study: {len(rows)} rows")
     log.info("Completed: %d rows", len(rows))
 
