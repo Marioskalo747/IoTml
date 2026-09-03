@@ -43,8 +43,7 @@ def normalise_per_source(df, cols=COMMON_FEATURES):
 def source_identifiability(df):
     n_raw = len(df)
     df = df[~df.duplicated(subset=COMMON_FEATURES + ["label"])]
-    log.info("source identifiability dedup: %d -> %d rows (%.1f%% exact duplicates dropped)",
-             n_raw, len(df), 100 * (1 - len(df) / max(n_raw, 1)))
+    log.info("source identifiability dedup: %d -> %d rows (%.1f%% exact duplicates dropped)", n_raw, len(df), 100 * (1 - len(df) / max(n_raw, 1)))
     X, src = df[COMMON_FEATURES], df["source"] #remove suspicious features that may leak dataset identity
     subsets = {"all_11": COMMON_FEATURES,"no_ports_9": [c for c in COMMON_FEATURES if "port" not in c],"no_ports_no_time_6": [c for c in COMMON_FEATURES
         if "port" not in c and c not in ("duration", "pkt_rate", "byte_rate")],"sizes_only_3": ["total_pkts", "total_bytes", "avg_pkt_size"]} #share of the largest dataset
@@ -85,8 +84,7 @@ def lodo(df, tag):
 
 '''all datasets pooled with random split'''
 def combined(df, tag):
-    #drop duplicate rows (same features and label) BEFORE the split, otherwise identical flows
-    #land in both train and test and inflate the score (same rule as preprocessing.split)
+    #drop duplicate rows before splitting to avoid leakage (same flow in train and test)
     n_raw = len(df)
     df = df[~df.duplicated(subset=COMMON_FEATURES + ["label"])]
     log.info("  combined %-12s dedup: %d -> %d rows (%.1f%% duplicates dropped)", tag, n_raw, len(df), 100 * (1 - len(df) / max(n_raw, 1)))
@@ -139,10 +137,8 @@ def main():
     for tag, v in ident.items():
         if tag == "chance_level":
             continue
-        ident_rows.append({"feature_subset": tag, "n_features": v["n_features"],
-                           "accuracy": v["accuracy"], "chance_level": chance,
-                           "lift_over_chance": v["accuracy"] - chance,
-                           "top_features": "; ".join(f"{k}={val}" for k, val in v["top_features"].items())})
+        ident_rows.append({"feature_subset": tag, "n_features": v["n_features"], "accuracy": v["accuracy"], "chance_level": chance,
+                           "lift_over_chance": v["accuracy"] - chance, "top_features": "; ".join(f"{k}={val}" for k, val in v["top_features"].items())})
     if ident_rows:
         pd.DataFrame(ident_rows).to_csv(RESULTS_DIR / "table_source_identifiability.csv", index=False)
         log.info("\nsource identifiability (chance=%.4f):\n%s", chance,
