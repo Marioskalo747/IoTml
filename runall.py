@@ -18,8 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import warnings
 warnings.filterwarnings("ignore")
 
-from config import (COMMON_FEATURES, FIGURES_DIR, MODELS_DIR, RESULTS_DIR, RANDOM_STATE,
-                    SLOW_MODEL_TRAIN_CAP, MIN_ROWS_PER_CLASS_SLOW)
+from config import (COMMON_FEATURES, FIGURES_DIR, MODELS_DIR, RESULTS_DIR, RANDOM_STATE, SLOW_MODEL_TRAIN_CAP, MIN_ROWS_PER_CLASS_SLOW)
 from evaluation import (evaluate_model, class_distribution, plot_confusion_matrix, feature_importance, model_comparison)
 from loaders import available_datasets, DATASETS
 from models_zoo import model_zoo
@@ -54,8 +53,7 @@ def subsample(X_train, y_train, cap):
         return X_train, y_train
     #the floor is the point
     idx = (pd.Series(range(len(X_train)), index=X_train.index).groupby(y_train, group_keys=False)
-           .apply(lambda x: x.sample(n=min(len(x), max(round(len(x)*cap/len(X_train)), MIN_ROWS_PER_CLASS_SLOW)),
-                                     random_state=RANDOM_STATE)))
+           .apply(lambda x: x.sample(n=min(len(x), max(round(len(x)*cap/len(X_train)), MIN_ROWS_PER_CLASS_SLOW)), random_state=RANDOM_STATE)))
     return X_train.loc[idx.index], y_train.loc[idx.index]
 
 '''Fingerprint of a training set for caching and reuse of models'''
@@ -187,7 +185,6 @@ def run_dataset(name, loader, to_common, collect_common: list):
     
     if not cmp_df.empty:
         model_comparison(cmp_df, name, FIGURES_DIR / f"model_comparison_{name}.png")
-    
     gc.collect()
     return results
 
