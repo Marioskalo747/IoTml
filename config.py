@@ -34,9 +34,8 @@ ARCHIVES_DIR = PROJECT_DIR / os.environ.get("IOT_IDS_ARCHIVES_DIR", "archives")
 
 MAX_ROWS_PER_DATASET = 400000 #loaded rows per dataset
 MAX_TRAIN_ROWS = 250000  #training rows after the split
-#cap for slow models (KNN, LinearSVM, MLP, DeepMLP, TorchMLP, AdaBoost). They therefore see ~4x
-#fewer rows than the boosting models, which confounds any "boosting beats neural networks" claim.
-#Set IOT_IDS_SLOW_CAP=250000 to run the matched-budget comparison (much slower, KNN especially)
+#cap for slow models
+#Set IOT_IDS_SLOW_CAP to 250000 to run the matched-budget comparison
 SLOW_MODEL_TRAIN_CAP = int(os.environ.get("IOT_IDS_SLOW_CAP", 60000))
 TEST_SIZE = 0.30  #train-test split
 RANDOM_STATE = 42  #random state for reproducibility
