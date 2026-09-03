@@ -27,8 +27,7 @@ PREVALENCES = (0.5, 0.01, 0.001, 0.0001)
 FLOWS_PER_DAY = 10_000_000 #reference network size for the alert-volume column
 
 log = logging.getLogger("oppoints")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
-                    handlers=[logging.StreamHandler(), logging.FileHandler(RESULTS_DIR / "operating_points.log", encoding="utf-8")])
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.StreamHandler(), logging.FileHandler(RESULTS_DIR / "operating_points.log", encoding="utf-8")])
 
 
 '''Full binary test split for a dataset'''
@@ -97,8 +96,7 @@ def main():
             prog.advance()
             continue
         n_neg = int((y_te == "Benign").sum())
-        log.info("%s: %d test rows, %d benign -> finest measurable FPR = %.2e",
-                 name, len(y_te), n_neg, (1.0 / n_neg) if n_neg else float("nan"))
+        log.info("%s: %d test rows, %d benign -> finest measurable FPR = %.2e", name, len(y_te), n_neg, (1.0 / n_neg) if n_neg else float("nan"))
         if n_neg == 0:
             log.warning("%s has no benign rows in test, skipping", name)
             prog.advance()
@@ -133,8 +131,7 @@ def main():
     if not m.empty:
         best = m.loc[m.groupby(["dataset", "fpr_target"])["tpr"].idxmax()].reset_index(drop=True)
         log.info("\nTightest measurable operating points (PPV at 0.1%% attack prevalence):\n%s",
-                 best[["dataset", "fpr_target", "model", "tpr", "actual_fpr",
-                       "ppv_at_prev_0.001", "false_alerts_per_day"]].round(4).to_string(index=False))
+                 best[["dataset", "fpr_target", "model", "tpr", "actual_fpr", "ppv_at_prev_0.001", "false_alerts_per_day"]].round(4).to_string(index=False))
     prog.finish(f"operating_points: {len(out)} rows")
     log.info("Completed: %d operating points over %d models", len(out), d.model.nunique())
 
