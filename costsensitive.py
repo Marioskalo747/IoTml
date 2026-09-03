@@ -31,8 +31,7 @@ DEFAULT_MODELS = ["RandomForest", "XGBoost", "LightGBM", "CatBoost"]
 DEFAULT_COSTS = (1.0, 5.0, 10.0) #how many false alarms one missed attack is worth
 
 log = logging.getLogger("cost")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
-                    handlers=[logging.StreamHandler(), logging.FileHandler(RESULTS_DIR / "cost_sensitive.log", encoding="utf-8")])
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.StreamHandler(), logging.FileHandler(RESULTS_DIR / "cost_sensitive.log", encoding="utf-8")])
 
 
 '''Per-row training weights for a strategy'''
@@ -79,8 +78,7 @@ def main():
     prev_path = RESULTS_DIR / "cost_sensitive.json"
     if prev_path.exists():
         try:
-            rows = [r for r in json.loads(prev_path.read_text(encoding="utf-8"))
-                    if r.get("dataset") not in wanted]
+            rows = [r for r in json.loads(prev_path.read_text(encoding="utf-8")) if r.get("dataset") not in wanted]
             if rows:
                 log.info("keeping %d rows from the previous run", len(rows))
         except Exception as e:
@@ -100,8 +98,7 @@ def main():
         del X, y, y_bin
         gc.collect()
         for task in tasks:
-            a_tr, a_te = ((y_tr, y_te) if task == "multiclass"
-                          else (yb_tr.map({0: "Benign", 1: "Attack"}), yb_te.map({0: "Benign", 1: "Attack"})))
+            a_tr, a_te = ((y_tr, y_te) if task == "multiclass" else (yb_tr.map({0: "Benign", 1: "Attack"}), yb_te.map({0: "Benign", 1: "Attack"})))
             labels = sorted(pd.unique(pd.concat([a_tr, a_te]).astype(str)))
             for mname in args.models:
                 spec = next((s for s in model_zoo(len(labels)) if s.name == mname), None)
@@ -115,9 +112,7 @@ def main():
                 for strategy in STRATEGIES:
                     #"fn_cost" is swept over the cost list and the other two have a single setting
                     for fn_cost in (costs if strategy == "fn_cost" else [1.0]):
-                        prog.update(stage="training", dataset=name, task=task, model=mname,
-                                    substage=f"{strategy} cost={fn_cost:g}",
-                                    message=f"{name}/{task}/{mname}/{strategy}")
+                        prog.update(stage="training", dataset=name, task=task, model=mname, substage=f"{strategy} cost={fn_cost:g}", message=f"{name}/{task}/{mname}/{strategy}")
                         try:
                             w = sample_weights(yt, strategy, fn_cost)
                             pipe, dt, weighted = fit_weighted(spec, Xt, yt, w)
@@ -128,20 +123,16 @@ def main():
                                 pass
                             r = evaluate_model(pipe, X_te, a_te.astype(str), labels, proba=proba)
                             rec = {"dataset": name, "task": task, "model": mname,
-                                   "strategy": strategy, "fn_cost": fn_cost,
-                                   **split_meta(name, a_tr, a_te),
+                                   "strategy": strategy, "fn_cost": fn_cost, **split_meta(name, a_tr, a_te),
                                    "weights_applied": weighted, "train_rows": len(Xt), "train_time_s": dt,
-                                   **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro",
-                                                        "f1_weighted", "precision_macro", "recall_macro",
-                                                        "mcc", "g_mean")}}
+                                   **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "f1_weighted", "precision_macro", "recall_macro", "mcc", "g_mean")}}
                             #per-class recall f1_macro can't move while a rare class doubles recall
                             for pc in r["per_class"]:
                                 rec[f"recall__{pc['class']}"] = pc["recall"]
                                 rec[f"f1__{pc['class']}"] = pc["f1"]
                             rows.append(rec)
                             log.info("  %s/%s %-13s %-9s cost=%-4g f1M=%.4f bal=%.4f recall_macro=%.4f",
-                                     name, task, mname, strategy, fn_cost, rec["f1_macro"],
-                                     rec["balanced_accuracy"], rec["recall_macro"])
+                                     name, task, mname, strategy, fn_cost, rec["f1_macro"], rec["balanced_accuracy"], rec["recall_macro"])
                             del pipe
                         except Exception as e:
                             log.warning("  FAIL %s/%s/%s/%s: %s", name, task, mname, strategy, e)
@@ -176,8 +167,7 @@ def main():
         g = pd.DataFrame(gains)
         g.to_csv(RESULTS_DIR / "table_cost_sensitive_gains.csv", index=False)
         log.info("\nChange versus the unweighted baseline (mean over models):\n%s",
-                 g.groupby(["dataset", "task", "strategy", "fn_cost"])[
-                     ["d_f1_macro", "d_balanced_accuracy", "d_recall_macro"]].mean().round(4).to_string())
+                 g.groupby(["dataset", "task", "strategy", "fn_cost"])[["d_f1_macro", "d_balanced_accuracy", "d_recall_macro"]].mean().round(4).to_string())
     prog.finish(f"cost_sensitive: {len(rows)} experiments")
     log.info("Completed: %d experiments", len(rows))
 
