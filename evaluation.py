@@ -162,13 +162,11 @@ def class_distribution(y: pd.Series, dataset: str, path: Path, y_test: pd.Series
         tr = y.value_counts()
         te = y_test.value_counts()
         order = (tr.add(te, fill_value=0)).sort_values(ascending=False).index
-        d = pd.DataFrame({"class": list(order) * 2,
-                          "split": ["train"] * len(order) + ["test"] * len(order),
+        d = pd.DataFrame({"class": list(order) * 2, "split": ["train"] * len(order) + ["test"] * len(order),
                           "flows": [float(tr.get(c, 0)) for c in order] + [float(te.get(c, 0)) for c in order]})
         #a class with 0 rows on one side must stay visible (it is floored at 0.5)
         d["flows"] = d["flows"].clip(lower=0.5)
-        sns.barplot(data=d, x="class", y="flows", hue="split", ax=ax,
-                    palette={"train": "#4878cf", "test": "#d65f5f"})
+        sns.barplot(data=d, x="class", y="flows", hue="split", ax=ax, palette={"train": "#4878cf", "test": "#d65f5f"})
         ax.set_title(f"Class distribution {dataset} (after dedup and split; 0.5 = class absent)")
     ax.set_ylabel("flows")
     ax.set_yscale("log")  #log scale for imbalanced datasets
@@ -271,8 +269,7 @@ def tuning_improvement(rows: list[dict], path: Path):
     ax.set_xlabel("")
     _delta = df["f1_tuned"].mean() - df["f1_default"].mean()
     _n_up = int((df["f1_tuned"] > df["f1_default"]).sum())
-    ax.set_title(f"Optuna tuning vs defaults (Macro-F1): mean change {_delta:+.4f}, "
-                 f"{_n_up} of {len(df)} combinations improved")
+    ax.set_title(f"Optuna tuning vs defaults (Macro-F1): mean change {_delta:+.4f}, " f"{_n_up} of {len(df)} combinations improved")
     plt.xticks(fontsize=8)
     plt.tight_layout()
     fig.savefig(path, dpi=300)
