@@ -41,8 +41,7 @@ def load_common():
 def main():
     df = load_common()
     results = []
-    #resume from previous run, but only records produced with the deduplicated protocol:
-    #older records came from a split that allowed duplicate flows in train and test
+    #resume from previous run
     if OUT.exists():
         try:
             results = [r for r in json.loads(OUT.read_text()) if r.get("dedup")]
@@ -60,8 +59,7 @@ def main():
         prog.update(stage="adaptation", dataset=held, task="cross_dataset", model="RandomForest",substage=f"target network {i_ho} of {len(holdouts)}", message=f"adapting to {held}")
         src = df[df["source"] != held] #Other networks as source
         tgt = df[df["source"] == held] #Target network as target
-        #duplicate flows are dropped BEFORE the target split: without this the small "local"
-        #sample contains exact copies of test rows and the adaptation gain is memorisation
+        #duplicate flows are dropped before the target split
         n_raw = len(tgt)
         tgt = tgt[~tgt.duplicated(subset=COMMON_FEATURES + ["label"])]
         log.info("target %s: %d -> %d rows after dedup (%.1f%% duplicates dropped)", held, n_raw, len(tgt), 100 * (1 - len(tgt) / max(n_raw, 1)))
