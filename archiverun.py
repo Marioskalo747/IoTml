@@ -43,7 +43,7 @@ def count_files(root: Path):
     return sum(1 for p in root.rglob("*") if p.is_file())
 
 '''sibling directory the temporal arm writes into, derived exactly as runfull.TEMPORAL_ENV does'''
-def _temporal(d: Path):
+def temporala(d: Path):
     return d.with_name(d.name + "_temporal")
 
 '''archive current results and models directories'''
@@ -57,7 +57,7 @@ def archive(label: str | None = None):
     manifest = {"run_id": f"run_{stamps}", "archived_at": datetime.now().isoformat(timespec="seconds"), 
                 "project_dir": str(PROJECT_DIR), "results_files": 0, "models_files": 0} #run's identity card
     for src, name in [(RESULTS_DIR, "results"), (MODELS_DIR, "models"),
-                      (_temporal(RESULTS_DIR), "results_temporal"), (_temporal(MODELS_DIR), "models_temporal")]:
+                      (temporala(RESULTS_DIR), "results_temporal"), (temporala(MODELS_DIR), "models_temporal")]:
         if src.exists() and any(src.iterdir()): #empty folders are not archived
             shutil.copytree(src, dest / name, ignore=shutil.ignore_patterns("__pycache__", "*.tmp"))
             manifest[f"{name}_files"] = count_files(dest / name)
@@ -106,11 +106,11 @@ def clear_active():
             force_rmtree(d)
         d.mkdir(parents=True, exist_ok=True)
     (RESULTS_DIR / "figures").mkdir(parents=True, exist_ok=True)
-    for d in (_temporal(RESULTS_DIR), _temporal(MODELS_DIR)):
+    for d in (temporala(RESULTS_DIR), temporala(MODELS_DIR)):
         if d.exists():
             force_rmtree(d)
         d.mkdir(parents=True, exist_ok=True)
-    (_temporal(RESULTS_DIR) / "figures").mkdir(parents=True, exist_ok=True)
+    (temporala(RESULTS_DIR) / "figures").mkdir(parents=True, exist_ok=True)
     print("Cleared active results/, models/ and their _temporal counterparts (figures dir recreated).")
 
 '''CLI archive, list, restore, clear'''    
