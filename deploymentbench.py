@@ -74,8 +74,7 @@ def bench_model(path: Path, X: pd.DataFrame):
     del pipe
     gc.collect()
     #single_call_overhead_us not latency
-    return {"size_mb": size_mb, "load_s": load_s, "us_per_flow": best / len(X) * 1e6,"flows_per_s": len(X) / best,
-            "single_call_overhead_us": single_us, "batch_size": int(len(X))}
+    return {"size_mb": size_mb, "load_s": load_s, "us_per_flow": best / len(X) * 1e6,"flows_per_s": len(X) / best, "single_call_overhead_us": single_us, "batch_size": int(len(X))}
     
 
 def main():
