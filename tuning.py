@@ -108,11 +108,9 @@ def tune_one(model_name, X_train, X_test, y_train, y_test, dataset, task, n_tria
     #the search runs on a subsample but the winner is refitted on the full training split
     Xs, ys = subsample(X_train, y_train, tune_rows) #small sample
     search_fraction = len(Xs) / max(len(X_train), 1)
-    log.info("[T] %s/%s: tuning %s on %d of %d training rows (%.1f%%, %d classes)",
-             dataset, task, model_name, len(Xs), len(X_train), 100 * search_fraction, n_classes)
+    log.info("[T] %s/%s: tuning %s on %d of %d training rows (%.1f%%, %d classes)", dataset, task, model_name, len(Xs), len(X_train), 100 * search_fraction, n_classes)
     if search_fraction < 0.5:
-        log.warning("[T] %s/%s/%s: hyperparameters searched on %.1f%% of the training rows they are refitted on",
-                    dataset, task, model_name, 100 * search_fraction)
+        log.warning("[T] %s/%s/%s: hyperparameters searched on %.1f%% of the training rows they are refitted on", dataset, task, model_name, 100 * search_fraction)
     skf = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
     
     '''mean f1 macro over 3 folds (optuna objective)'''
@@ -134,8 +132,7 @@ def tune_one(model_name, X_train, X_test, y_train, y_test, dataset, task, n_tria
             best = study_.best_value
         except ValueError:
             best = float("nan") #no trials completed yet
-        PROGRESS.advance(substage=f"trial {trial_.number + 1} of {n_trials} - best f1_macro {best:.4f}",
-                         details={"tuning": {"trial": trial_.number + 1, "best_cv_f1_macro": best}})
+        PROGRESS.advance(substage=f"trial {trial_.number + 1} of {n_trials} - best f1_macro {best:.4f}", details={"tuning": {"trial": trial_.number + 1, "best_cv_f1_macro": best}})
     #seed sampler for reproducibility, 8 random trials to start
     study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=RANDOM_STATE, n_startup_trials=8))
     t0 = time.perf_counter()
@@ -261,12 +258,9 @@ def main():
             all.append({**r["tuned"], "dataset": r["dataset"], "task": r["task"],"model": _name, "family": families.get(r["model"], "boosting"), "params": r["best_params"],"roc_auc_ovr": r.get("tuned_roc_auc"),
                         "per_class": r["per_class_tuned"],"confusion_matrix": r["confusion_matrix_tuned"], "labels": r["labels"], "train_time_s": r.get("train_time_s"),
                         #sizes and split metadata so the tuned rows are not blank in the overview
-                        **{k: r.get(k) for k in ("train_rows", "test_rows", "train_rows_available",
-                                                 "capped", "train_cap", "split_mode", "evaluable",
-                                                 "n_test_classes", "classes_missing_from_train",
-                                                 "min_train_per_class", "classes_undertrained",
-                                                 "fully_learnable", "n_features",
-                                                 "train_min_class_rows")}})
+                        **{k: r.get(k) for k in ("train_rows", "test_rows", "train_rows_available", "capped", "train_cap", "split_mode", "evaluable",
+                                                 "n_test_classes", "classes_missing_from_train", "min_train_per_class", "classes_undertrained",
+                                                 "fully_learnable", "n_features", "train_min_class_rows")}})
             added += 1
         allp.write_text(json.dumps(all, indent=1, default=str), encoding="utf-8")
         log.info("added %d tuned models to all_results.json", added)
