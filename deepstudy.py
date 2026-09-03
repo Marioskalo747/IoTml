@@ -248,8 +248,7 @@ def main():
                     dt = time.perf_counter() - t0
                     m = evaluate_model(pipe, X_te, yv, labels=all_labels) #same test size set for comparison
                     out["learning_curves"].append({"dataset": ds, "task": "multiclass", "model": model_name, "n": int(len(Xc)),
-                                                   "f1_macro": m["f1_macro"], "accuracy": m["accuracy"], "mcc": m["mcc"],
-                                                   "train_time_s": dt, **meta})
+                                                   "f1_macro": m["f1_macro"], "accuracy": m["accuracy"], "mcc": m["mcc"], "train_time_s": dt, **meta})
                     print(f"[curve] {ds}/{model_name:10s} rows={len(Xc)}")             
                 except Exception as e:
                     print(f"[{ds}/{model_name}] Error: {e}")
