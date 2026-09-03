@@ -26,10 +26,7 @@ FPR_TARGETS = (0.01, 0.001) #operating points for detection at FPR
 
 #logs
 log = logging.getLogger("stats")
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[logging.StreamHandler(),
-              logging.FileHandler(RESULTS_DIR / "validation_stats.log", encoding="utf-8")])
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.StreamHandler(),logging.FileHandler(RESULTS_DIR / "validation_stats.log", encoding="utf-8")])
 
 '''training time, test split, trims in stratified way'''
 def testsplit_for(name):
@@ -53,7 +50,7 @@ def testsplit_for(name):
     return X_te, y_te, yb_te, y_tr, yb_tr
 
 '''macro-F1 straight from a confusion matrix, matching f1_score(average="macro", zero_division=0)'''
-def _macro_f1_cm(C):
+def macro_f1_cm(C):
     tp = np.diag(C).astype(float)
     fp = C.sum(axis=0) - tp
     fn = C.sum(axis=1) - tp
@@ -71,16 +68,15 @@ def bootstrap_ci(y_true, y_pred, labels, n_boot=N_BOOT, seed=RANDOM_STATE):
     n = int(C.sum())
     if n == 0:
         z = float("nan")
-        return {"f1_macro": z, "f1_macro_lo": z, "f1_macro_hi": z,
-                "accuracy": z, "accuracy_lo": z, "accuracy_hi": z, "n_test": 0}
+        return {"f1_macro": z, "f1_macro_lo": z, "f1_macro_hi": z, "accuracy": z, "accuracy_lo": z, "accuracy_hi": z, "n_test": 0}
     draws = rng.multinomial(n, (C / n).reshape(-1), size=n_boot).reshape(n_boot, *C.shape)
-    f1s = np.array([_macro_f1_cm(c) for c in draws])
+    f1s = np.array([macro_f1_cm(c) for c in draws])
     accs = np.trace(draws, axis1=1, axis2=2) / n
     #2.5% and 97.5% percentiles for bounds of bootstrap
-    return {"f1_macro": _macro_f1_cm(C), "f1_macro_lo": float(np.percentile(f1s, 2.5)), "f1_macro_hi": float(np.percentile(f1s, 97.5)),
-    "accuracy": float(np.trace(C) / n), "accuracy_lo": float(np.percentile(accs, 2.5)), "accuracy_hi": float(np.percentile(accs, 97.5)),
     #the split the interval refers to, so a reader can never again mistake it for a different one
-    "n_test": n}
+    return {"f1_macro": macro_f1_cm(C), "f1_macro_lo": float(np.percentile(f1s, 2.5)), "f1_macro_hi": float(np.percentile(f1s, 97.5)),
+    "accuracy": float(np.trace(C) / n), "accuracy_lo": float(np.percentile(accs, 2.5)), "accuracy_hi": float(np.percentile(accs, 97.5)),"n_test": n}
+    
 
 '''McNemar test for two classifiers on the same dataset'''
 def mcnemar_pair(y_true, pred_a, pred_b):
@@ -145,11 +141,9 @@ def selection_bias():
     cv = {}
     for r in ext:
         if r.get("kind") == "cross_validation" and r.get("f1_macro_mean") is not None:
-            cv.setdefault((r["dataset"], r["task"]), []).append(
-                (r["model"], r["f1_macro_mean"], r.get("f1_macro_std")))
+            cv.setdefault((r["dataset"], r["task"]), []).append((r["model"], r["f1_macro_mean"], r.get("f1_macro_std")))
     #main results test set scores
-    test = {(r["dataset"], r["task"], r["model"]): r["f1_macro"]
-            for r in allr if not str(r["dataset"]).startswith("LODO")}
+    test = {(r["dataset"], r["task"], r["model"]): r["f1_macro"] for r in allr if not str(r["dataset"]).startswith("LODO")}
 
     rows = []
     for (ds, task), cands in sorted(cv.items()):
@@ -231,19 +225,14 @@ def run_dataset(name, n_boot):
         #McNemar test for the top 2 models
         mc = mcnemar_pair(y_te, preds[top2[0]], preds[top2[1]]) if len(top2) == 2 else None
         if mc:
-            mc.update({"model_a": top2[0], "model_b": top2[1],
-                       "f1_a": ci[top2[0]]["f1_macro"], "f1_b": ci[top2[1]]["f1_macro"],
+            mc.update({"model_a": top2[0], "model_b": top2[1], "f1_a": ci[top2[0]]["f1_macro"], "f1_b": ci[top2[1]]["f1_macro"],
                        #f1 on the full test split, which is what the pair was ranked on
-                       "f1_a_full_test": full.get(top2[0]), "f1_b_full_test": full.get(top2[1]),
-                       "ranking_source": rank_src, "n_test_mcnemar": int(len(y_te))})
+                       "f1_a_full_test": full.get(top2[0]), "f1_b_full_test": full.get(top2[1]), "ranking_source": rank_src, "n_test_mcnemar": int(len(y_te))})
         det = {m: detection_at_fpr(y_te, pr) for m, pr in probas.items()} if task == "binary" else {}
         base = baselines(train_labels[task], y_te, labels) #priors learned on train, scored on test
 
-        results[task] = {"n_test": int(len(y_te)), "labels": labels,
-                         "confidence_intervals": ci, "mcnemar_top2": mc,
-                         "detection_at_fpr": det, "baselines": base}
-        log.info("%s/%s: %d models, top2=%s, p=%s", name, task, len(preds), top2,
-                 f"{mc['p_value']:.3g}" if mc else "—")
+        results[task] = {"n_test": int(len(y_te)), "labels": labels, "confidence_intervals": ci, "mcnemar_top2": mc, "detection_at_fpr": det, "baselines": base}
+        log.info("%s/%s: %d models, top2=%s, p=%s", name, task, len(preds), top2, f"{mc['p_value']:.3g}" if mc else "—")
 
     del X_te
     gc.collect()
@@ -279,8 +268,7 @@ def main():
             stale = [k for k, v in prev.items() if k not in wanted and not _current_method(v)]
             if stale:
                 log.warning("discarding %s: computed with the old 10,000-row subsample. Rerun "
-                            "validationstats.py for them so every interval uses the full test split",
-                            ", ".join(sorted(stale)))
+                            "validationstats.py for them so every interval uses the full test split", ", ".join(sorted(stale)))
             if out:
                 log.info("keeping previous results for: %s", ", ".join(sorted(k for k in out if not k.startswith("_"))))
         except Exception as e:
@@ -321,9 +309,7 @@ def main():
             for strat, v in r["baselines"].items():
                 if isinstance(v, dict): #maajority class and share are scalars
                     bl_rows.append({"dataset": ds, "task": task, "baseline": strat, **v})
-    for rows, fname in ((ci_rows, "table_confidence_intervals.csv"),
-                        (mc_rows, "table_mcnemar.csv"),
-                        (det_rows, "table_detection_at_fpr.csv"),
+    for rows, fname in ((ci_rows, "table_confidence_intervals.csv"),(mc_rows, "table_mcnemar.csv"),(det_rows, "table_detection_at_fpr.csv"),
                         (bl_rows, "table_baselines.csv")):
         if rows:
             pd.DataFrame(rows).to_csv(RESULTS_DIR / fname, index=False)
