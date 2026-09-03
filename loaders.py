@@ -107,8 +107,7 @@ def parse_port(series: pd.Series):
 WINDOWS = (5.0, 10.0) #seconds of network activity summarised around each flow
 
 '''Windowed context features (what else was happening on the wire around this flow)'''
-def add_window_features(df: pd.DataFrame, ts_col, src_col, dst_col, dport_col=None,
-                        bytes_col=None, windows=WINDOWS):
+def add_window_features(df: pd.DataFrame, ts_col, src_col, dst_col, dport_col=None, bytes_col=None, windows=WINDOWS):
     need = [c for c in (ts_col, src_col, dst_col) if c not in df.columns]
     if need:
         return df, []
@@ -118,10 +117,8 @@ def add_window_features(df: pd.DataFrame, ts_col, src_col, dst_col, dport_col=No
     t = ts.fillna(ts.min()).to_numpy(dtype="float64")
     src = pd.factorize(df[src_col].astype(str).to_numpy())[0]
     dst = pd.factorize(df[dst_col].astype(str).to_numpy())[0]
-    dpt = (pd.factorize(df[dport_col].astype(str).to_numpy())[0]
-           if dport_col in df.columns else src)
-    byt = (pd.to_numeric(df[bytes_col], errors="coerce").fillna(0).to_numpy(dtype="float64")
-           if bytes_col in df.columns else np.zeros(len(t)))
+    dpt = (pd.factorize(df[dport_col].astype(str).to_numpy())[0] if dport_col in df.columns else src)
+    byt = (pd.to_numeric(df[bytes_col], errors="coerce").fillna(0).to_numpy(dtype="float64") if bytes_col in df.columns else np.zeros(len(t)))
     made = []
     for W in windows:
         tag = f"w{int(W)}"
@@ -432,11 +429,9 @@ def load_ciciot2023(cap: int = MAX_ROWS_PER_DATASET):
 '''CICIOT2023 common feature extraction'''
 def ciciot_common(df: pd.DataFrame):
     #protocols already binary columns (unnecessary one-hot)
-    common = pd.DataFrame({
-        "proto_tcp": pd.to_numeric(df.get("tcp"), errors="coerce").fillna(0).astype(np.int8),
+    common = pd.DataFrame({ "proto_tcp": pd.to_numeric(df.get("tcp"), errors="coerce").fillna(0).astype(np.int8),
         "proto_udp": pd.to_numeric(df.get("udp"), errors="coerce").fillna(0).astype(np.int8),
-        "proto_icmp": pd.to_numeric(df.get("icmp"), errors="coerce").fillna(0).astype(np.int8),
-    })
+        "proto_icmp": pd.to_numeric(df.get("icmp"), errors="coerce").fillna(0).astype(np.int8)})
     common["total_pkts"] = pd.to_numeric(df.get("number"), errors="coerce")
     common["avg_pkt_size"] = pd.to_numeric(df.get("avg"), errors="coerce")
     if "flow_duration" in df.columns:
@@ -502,8 +497,7 @@ def parse_zeek_stream(fh, name: str, per_file: int):
 '''Contiguous blocks of a chunk, each carrying its own windowed context'''
 def _windowed_blocks(chunk: pd.DataFrame, take: int, n_blocks: int = 4, warmup: int = 3000):
     if len(chunk) <= take:
-        out, _ = add_window_features(chunk, "ts", "id.orig_h", "id.resp_h",
-                                     dport_col="id.resp_p", bytes_col="orig_ip_bytes")
+        out, _ = add_window_features(chunk, "ts", "id.orig_h", "id.resp_h", dport_col="id.resp_p", bytes_col="orig_ip_bytes")
         return out
     size = max(take // n_blocks, 1)
     starts = np.linspace(0, len(chunk) - size, n_blocks).astype(int)
@@ -511,8 +505,7 @@ def _windowed_blocks(chunk: pd.DataFrame, take: int, n_blocks: int = 4, warmup: 
     for st in starts:
         lo = max(0, int(st) - warmup)
         block = chunk.iloc[lo:int(st) + size].copy()
-        block, _ = add_window_features(block, "ts", "id.orig_h", "id.resp_h",
-                                       dport_col="id.resp_p", bytes_col="orig_ip_bytes")
+        block, _ = add_window_features(block, "ts", "id.orig_h", "id.resp_h", dport_col="id.resp_p", bytes_col="orig_ip_bytes")
         out.append(block.iloc[int(st) - lo:]) #drop the warm-up rows, keep their effect
     return pd.concat(out, ignore_index=True)
 
@@ -520,8 +513,8 @@ def _windowed_blocks(chunk: pd.DataFrame, take: int, n_blocks: int = 4, warmup: 
 def load_iot23(cap: int = MAX_ROWS_PER_DATASET):
     root = dataset_dir()
     parts: list[pd.DataFrame] = []
-    tars = find(root, ["iot_23*.tar.gz", "iot_23*small*.tar.gz", "*iot*23*.tar.gz"])   #####ONOMATA
-    logs = find(root, ["conn.log.labeled", "*.log.labeled"])                          #####ONOMATA
+    tars = find(root, ["iot_23*.tar.gz", "iot_23*small*.tar.gz", "*iot*23*.tar.gz"])   
+    logs = find(root, ["conn.log.labeled", "*.log.labeled"])                          
     per_file = 60000
     if logs:
         for f in logs:
