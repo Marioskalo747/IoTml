@@ -11,10 +11,7 @@ from config import RANDOM_STATE
 class TorchMLPClassifier(BaseEstimator, ClassifierMixin):
     
     '''stores valus (contracts for working sklearn clone and get_params)'''
-    def __init__(self, hidden=(256, 128, 64), dropout=0.2, lr=1e-3,
-                 weight_decay=1e-4, batch_size=1024, max_epochs=60,
-                 patience=6, class_weight=None, device=None,
-                 random_state=42, verbose=False):
+    def __init__(self, hidden=(256, 128, 64), dropout=0.2, lr=1e-3, weight_decay=1e-4, batch_size=1024, max_epochs=60, patience=6, class_weight=None, device=None,random_state=42, verbose=False):
         self.hidden = hidden  #width of hidden layers
         self.dropout = dropout
         self.lr = lr #regularization
