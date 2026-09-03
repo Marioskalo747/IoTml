@@ -96,8 +96,7 @@ def main():
                 pred = s >= thr
                 det = float(pred[y == 1].mean()) if (y == 1).any() else None  #attacks detected
                 fp = float(pred[y == 0].mean()) if (y == 0).any() else None   #benign misclassified
-                #detection_rate is bounded by c fpr_over_c is discriminative measure
-                # <1 = benign is pushed to low scores, >1 = detector prefers benign 
+                #detection_rate is bounded by c fpr_over_c is discriminative measure, <1 = benign pushed to low scores, >1 = detector prefers benign 
                 rows.append({**base, "contamination": c, "roc_auc": m["roc_auc"],"detection_rate": det, "fpr_benign": fp,
                              "fpr_over_c": (fp / c) if fp is not None else None,
                              "n_test": m["n_test"], "attack_share": m["attack_share"]})
