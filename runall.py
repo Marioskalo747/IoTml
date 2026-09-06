@@ -66,7 +66,6 @@ def data_fingerprint(X_train, y_train):
 def train_all_models(X_train, X_test, y_train, y_test, dataset, task):
     labels = sorted(pd.unique(pd.concat([y_train, y_test]).astype(str)))
     fingerprint = data_fingerprint(X_train, y_train)
-    pre = make_preprocessor(X_train) #preprocessor inside the pipeline to avoid data leakage
     out = []
     n_models_here = len(model_zoo(len(labels)))   
     i_model = 0                                  
@@ -90,7 +89,8 @@ def train_all_models(X_train, X_test, y_train, y_test, dataset, task):
             Xt, yt = (X_train, y_train) #slow model subsample
             if spec.slow:
                 Xt, yt = subsample(X_train, y_train, SLOW_MODEL_TRAIN_CAP)
-            pipeline = Pipeline([("pre", pre), ("clf", spec.build())])
+            #fresh preprocessor per model
+            pipeline = Pipeline([("pre", make_preprocessor(Xt)), ("clf", spec.build())])
             t0 = time.perf_counter()
             pipeline.fit(Xt, yt.astype(str))
             train_time = time.perf_counter() - t0

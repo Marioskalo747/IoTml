@@ -129,7 +129,10 @@ def make_preprocessor(X: pd.DataFrame):
 
 
 '''class-imbalance strategy for training set'''
-def apply_imbalance(X_tr, y_tr, strategy: str, random_state = RANDOM_STATE):
+def apply_imbalance(X_tr, y_tr, strategy: str, random_state=None):
+    #Resolved at call time
+    if random_state is None:
+        random_state = RANDOM_STATE
     if strategy in ("none", "class_weight"): #models handle class imbalance internally
         return X_tr, y_tr
     if strategy == "undersample": #trims the majority
@@ -182,7 +185,7 @@ def select_features(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr, method: str, k
 _SPLIT_AUDIT: dict = {} #dataset -> what the split actually did, dumped to split_audit.json
 
 '''Record what each split really produced'''
-def record_split_audit(dataset, used, ts, y_tr, y_te):
+def record_split_audit(dataset, used, ts, y_tr, y_te, y_bin_te=None):
     try:
         tr, te = set(pd.unique(y_tr.astype(str))), set(pd.unique(y_te.astype(str)))
         rec = {"split_mode_requested": SPLIT_MODE, "split_mode_used": used,
@@ -190,6 +193,17 @@ def record_split_audit(dataset, used, ts, y_tr, y_te):
                "classes_train": sorted(tr), "classes_test": sorted(te),
                "missing_from_train": sorted(te - tr), #unlearnable classes
                "missing_from_test": sorted(tr - te)}
+        #chronological cut can leave a test set that cannot carry a metric at all
+        rec["test_single_class"] = bool(len(te) < 2)
+        if y_bin_te is not None:
+            rec["test_binary_single_class"] = bool(pd.Series(y_bin_te).nunique(dropna=True) < 2)
+        rec["degenerate_test"] = bool(rec["test_single_class"] or rec.get("test_binary_single_class"))
+        if rec["degenerate_test"]:
+            _log.warning("%s [%s]: DEGENERATE test split - %d attack class(es)%s. Accuracy is "
+                         "meaningless here and ROC-AUC/FPR are undefined; every row is marked "
+                         "evaluable=False and must be excluded from the reported results.",
+                         dataset or "dataset", used, len(te),
+                         ", no benign rows at all" if rec.get("test_binary_single_class") else "")
         if used == "temporal" and ts is not None and ts.notna().any():
             rec["train_time_range"] = [float(ts.loc[y_tr.index].min()), float(ts.loc[y_tr.index].max())]
             rec["test_time_range"] = [float(ts.loc[y_te.index].min()), float(ts.loc[y_te.index].max())]
@@ -242,6 +256,10 @@ def split_meta(dataset, y_train=None, y_test=None):
     out["min_train_per_class"] = int(counts.reindex(sorted(te)).fillna(0).min()) if te else None
     out["classes_undertrained"] = starved
     out["evaluable"] = bool(len(te) >= 2 and not missing)
+    #why, not just whether: a reader of a single CSV row should not have to open split_audit.json
+    out["not_evaluable_reason"] = (None if out["evaluable"]
+                                   else ("test set has a single class" if len(te) < 2
+                                         else f"classes absent from train: {missing}"))
     out["fully_learnable"] = bool(out["evaluable"] and not starved)
     return out
 
@@ -279,10 +297,10 @@ def split(X, y, y_bin, dataset=None):
             X_tr, X_te = X.loc[tr_idx], X.loc[te_idx]
             y_tr, y_te = y.loc[tr_idx], y.loc[te_idx]
             y_bin_tr, y_bin_te = y_bin.loc[tr_idx], y_bin.loc[te_idx]
-            record_split_audit(dataset, used, ts, y_tr, y_te)
+            record_split_audit(dataset, used, ts, y_tr, y_te, y_bin_te)
     if used == "random":
         X_tr, X_te, y_tr, y_te, y_bin_tr, y_bin_te = train_test_split(X, y, y_bin, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y) #same class propotions in train and test
-        record_split_audit(dataset, used, ts, y_tr, y_te)
+        record_split_audit(dataset, used, ts, y_tr, y_te, y_bin_te)
     #The floor min(len(s), 1000) keeps small classes whole large classes downsampled proportionally
     if len(X_tr) > MAX_TRAIN_ROWS:
         before = y_tr.value_counts(normalize=True)

@@ -26,8 +26,8 @@ def positive_label(labels):
 def ranking_score(proba, ipos):
     p_pos = proba[:, ipos]
     p_neg = proba[:, 1 - ipos]
-    if len(np.unique(p_neg)) > len(np.unique(p_pos)):
-        return -p_neg #same ordering, more resolution
+    if len(np.unique(p_neg)) > len(np.unique(p_pos)) * 1.1 + 1:
+        return -p_neg #same ordering, materially more resolution
     return p_pos
 
 '''Per-class breakdown of confusion matrix and metrics'''
@@ -57,14 +57,17 @@ def evaluate_model(model, X_te, y_te, labels, *, proba=None):
     t0= time.perf_counter()
     y_pred = model.predict(X_te)
     pred_time = time.perf_counter() - t0  #prediction time
+    #labels is the train-test union and stays the axis of the confusion matrix and of per_class
+    _yt = np.asarray(y_te)
+    scored = [l for l in labels if (_yt == l).any()] or list(labels)
     res = {"accuracy": accuracy_score(y_te, y_pred),
         "balanced_accuracy": balanced_accuracy_score(y_te, y_pred), #mean recall
-        "precision_macro": precision_score(y_te, y_pred, average="macro", labels=labels, zero_division=0),
-        "recall_macro": recall_score(y_te, y_pred, average="macro", labels=labels, zero_division=0),
-        "f1_macro": f1_score(y_te, y_pred, average="macro", labels=labels, zero_division=0),
-        "precision_weighted": precision_score(y_te, y_pred, average="weighted", labels=labels, zero_division=0),
-        "recall_weighted": recall_score(y_te, y_pred, average="weighted", labels=labels, zero_division=0),
-        "f1_weighted": f1_score(y_te, y_pred, average="weighted", labels=labels, zero_division=0),
+        "precision_macro": precision_score(y_te, y_pred, average="macro", labels=scored, zero_division=0),
+        "recall_macro": recall_score(y_te, y_pred, average="macro", labels=scored, zero_division=0),
+        "f1_macro": f1_score(y_te, y_pred, average="macro", labels=scored, zero_division=0),
+        "precision_weighted": precision_score(y_te, y_pred, average="weighted", labels=scored, zero_division=0),
+        "recall_weighted": recall_score(y_te, y_pred, average="weighted", labels=scored, zero_division=0),
+        "f1_weighted": f1_score(y_te, y_pred, average="weighted", labels=scored, zero_division=0),
         "mcc": matthews_corrcoef(y_te, y_pred), #strictest imbalanced metric [-1, 1]
         "cohen_kappa": cohen_kappa_score(y_te, y_pred), #aggreement above chance
         "predict_time_s": pred_time,
@@ -97,6 +100,9 @@ def evaluate_model(model, X_te, y_te, labels, *, proba=None):
             res.setdefault("roc_auc_ovr", None) #missing class
     res["confusion_matrix"] = confusion_matrix(y_te, y_pred, labels=labels).tolist()
     res["labels"] = list(labels) #class order
+    #so a reader can tell a macro average over 5 classes from one over 2
+    res["labels_scored"] = list(scored)
+    res["n_labels_unscored"] = int(len(labels) - len(scored))
     return res
 
 '''ROC and PR curves for binary classification'''
@@ -259,18 +265,29 @@ def strategy_comparison(rows: list[dict], dataset: str, task: str, path: Path, m
 '''Default vs optuna-tuned hyperparameter comparison'''    
 def tuning_improvement(rows: list[dict], path: Path):
     df = pd.DataFrame(rows)
-    df["combo"]= df["dataset"] + "\n" + df["model"]
+    #Horizontal, one combination per row
+    df["combo"] = df["dataset"] + "  " + df["model"]
+    df["gain"] = df["f1_tuned"] - df["f1_default"]
+    df = df.sort_values("gain", ascending=False).reset_index(drop=True)
     d = df.melt(id_vars="combo", value_vars=["f1_default", "f1_tuned"], var_name="config", value_name="f1_macro")
-    d["config"] = d["config"].map({"f1_default": "F1 Default", "f1_tuned": "Optuna-Tuned"})
-    fig, ax = plt.subplots(figsize=(max(8, 0.42 * df["combo"].nunique()), 5))
-    sns.barplot(data=d, x="combo", y="f1_macro", hue="config", ax=ax)
-    lo = max(0.0, d["f1_macro"].min() - 0.05)
-    ax.set_ylim(lo, 1.02)
-    ax.set_xlabel("")
+    d["config"] = d["config"].map({"f1_default": "Default", "f1_tuned": "Optuna-tuned"})
+    fig, ax = plt.subplots(figsize=(10, max(5.0, 0.34 * len(df))))
+    sns.barplot(data=d, y="combo", x="f1_macro", hue="config", order=df["combo"], ax=ax)
+    lo = max(0.0, float(d["f1_macro"].min()) - 0.04)
+    hi = 1.0 + (1.0 - lo) * 0.16 #room on the right for the delta column
+    ax.set_xlim(lo, hi)
+    ax.set_ylabel("")
+    ax.set_xlabel("Macro-F1")
+    ax.tick_params(axis="y", labelsize=8)
+    #the bars differ by less than a pixel, so the difference is written out next to them
+    for i, g in enumerate(df["gain"]):
+        ax.text(hi, i, f"{g:+.4f}", va="center", ha="right", fontsize=7, family="monospace",
+                color=("#0a7d55" if g > 0.0005 else "#c02626" if g < -0.0005 else "0.45"))
     _delta = df["f1_tuned"].mean() - df["f1_default"].mean()
     _n_up = int((df["f1_tuned"] > df["f1_default"]).sum())
-    ax.set_title(f"Optuna tuning vs defaults (Macro-F1): mean change {_delta:+.4f}, " f"{_n_up} of {len(df)} combinations improved")
-    plt.xticks(fontsize=8)
+    ax.set_title(f"Optuna tuning vs defaults (Macro-F1): mean change {_delta:+.4f}, " f"{_n_up} of {len(df)} combinations improved", fontsize=11, pad=26)
+    #above the axes: at the lower right it sat on top of the last two delta values
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.002), ncol=2, frameon=False, fontsize=9)
     plt.tight_layout()
     fig.savefig(path, dpi=300)
     plt.close(fig)

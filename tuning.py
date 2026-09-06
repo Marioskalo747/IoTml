@@ -32,6 +32,7 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
 TUNE_ROWS = 30000 #25 trials x 3 folds x 30k rows
+TUNED_FALLBACK_DROP = 0.05
 N_TRIALS = 25 #time/quality balance for TPE
 CV_FOLDS = 3 
 OUT_PATH = RESULTS_DIR / "tuning_results.json"
@@ -60,7 +61,7 @@ def lgbm(trial, n_classes):
         "subsample": trial.suggest_float("subsample", 0.6, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
         "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
-        "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 10.0, log=True)}
+        "reg_lambda": trial.suggest_float("reg_lambda", 0.1, 10.0, log=True)}
     #subsample_freq=1 
     return LGBMClassifier(**p, subsample_freq=1 , n_jobs=-1, verbose=-1, random_state=RANDOM_STATE)
 
@@ -154,8 +155,25 @@ def tune_one(model_name, X_train, X_test, y_train, y_test, dataset, task, n_tria
         pass
     res = evaluate_model(pipe, X_test, y_test.astype(str), labels, proba=proba)
     #comparison with default hyperparameters
-    dflt = Pipeline([("preprocessor", make_preprocessor(X_train)), ("clf", default_model(model_name, n_classes))]).fit(X_train, y_train.astype(str))
-    res_d=evaluate_model(dflt, X_test, y_test.astype(str), labels)
+    dflt = Pipeline([("preprocessor", make_preprocessor(X_train)), ("clf", default_model(model_name, n_classes))])
+    t0 = time.perf_counter()
+    dflt.fit(X_train, y_train.astype(str))
+    dflt_train_time = time.perf_counter() - t0
+    proba_d = None
+    try:
+        proba_d = dflt.predict_proba(X_test)
+    except Exception:
+        pass
+    res_d=evaluate_model(dflt, X_test, y_test.astype(str), labels, proba=proba_d)
+    tuned_fallback = None
+    _drop = res_d["f1_macro"] - res["f1_macro"]
+    if _drop > TUNED_FALLBACK_DROP:
+        log.warning("[T] %s/%s/%s: refit macro-F1 %.4f against %.4f for the untuned default (-%.4f) -> "
+                    "rejecting the search result and keeping the default configuration",
+                    dataset, task, model_name, res["f1_macro"], res_d["f1_macro"], _drop)
+        tuned_fallback = {"rejected_params": dict(study.best_params), "rejected_f1_macro": float(res["f1_macro"]),
+                          "drop_vs_default": float(_drop), "threshold": TUNED_FALLBACK_DROP}
+        pipe, res, train_time = dflt, res_d, dflt_train_time
     tag = f"{dataset}__{task}__{model_name}__tuned"
     joblib.dump(pipe, MODELS_DIR / f"{tag}.joblib", compress=3) #compare size/speed tradeoff
     trials = [{"number": t.number, "value": t.value} for t in study.trials if t.value is not None]
@@ -171,13 +189,17 @@ def tune_one(model_name, X_train, X_test, y_train, y_test, dataset, task, n_tria
             **meta,
             #search vs refit size difference
             "refit_rows": int(len(X_train)), "search_fraction": float(search_fraction),
-            "best_params": study.best_params,
+            "best_params": study.best_params, #what the search selected
+            #not None when that selection was rejected: the row below describes the default instead
+            "tuned_fallback_to_default": tuned_fallback,
             "best_cv_f1_macro": study.best_value,
             "tune_time_s": tune_time, "train_time_s": train_time,
             #predict_us_per_sample belongs here
             "tuned": {k: res[k] for k in("accuracy", "balanced_accuracy", "f1_macro", "f1_weighted","precision_macro", "recall_macro", "mcc", "cohen_kappa","g_mean", "predict_us_per_sample")},
             "default": {k: res_d[k] for k in("accuracy", "balanced_accuracy", "f1_macro", "f1_weighted","precision_macro", "recall_macro", "mcc", "cohen_kappa","g_mean")},
             "tuned_roc_auc": res.get("roc_auc_ovr"),
+            #how many classes the macro average was actually taken over (see evaluate_model)
+            "labels_scored": res.get("labels_scored"), "n_labels_unscored": res.get("n_labels_unscored"),
             "trials": trials,
             "per_class_tuned": res["per_class"],
             "confusion_matrix_tuned": res["confusion_matrix"],
@@ -260,7 +282,10 @@ def main():
                         #sizes and split metadata so the tuned rows are not blank in the overview
                         **{k: r.get(k) for k in ("train_rows", "test_rows", "train_rows_available", "capped", "train_cap", "split_mode", "evaluable",
                                                  "n_test_classes", "classes_missing_from_train", "min_train_per_class", "classes_undertrained",
-                                                 "fully_learnable", "n_features", "train_min_class_rows")}})
+                                                 "fully_learnable", "n_features", "train_min_class_rows",
+                                                 #so a tuned row is not the only one missing these
+                                                 "not_evaluable_reason", "labels_scored", "n_labels_unscored",
+                                                 "tuned_fallback_to_default")}})
             added += 1
         allp.write_text(json.dumps(all, indent=1, default=str), encoding="utf-8")
         log.info("added %d tuned models to all_results.json", added)

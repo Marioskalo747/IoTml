@@ -168,9 +168,11 @@ def main():
     #aggregate results and save per dataset, task, model, seed
     d = pd.DataFrame(rows)
     (RESULTS_DIR / "seed_study.json").write_text(json.dumps(rows, indent=1, default=str), encoding="utf-8")
+    #evaluable/split_mode are already on every row (split_meta above)
+    _keep_first = {c: (c, "first") for c in ("split_mode", "evaluable", "not_evaluable_reason") if c in d.columns}
     agg = (d.groupby(["dataset", "task", "model"]).agg(n_seeds=("seed", "nunique"),f1_macro_mean=("f1_macro", "mean"), f1_macro_std=("f1_macro", "std"),
                 f1_macro_min=("f1_macro", "min"), f1_macro_max=("f1_macro", "max"),accuracy_mean=("accuracy", "mean"), accuracy_std=("accuracy", "std"),
-                mcc_mean=("mcc", "mean"), mcc_std=("mcc", "std")).reset_index())
+                mcc_mean=("mcc", "mean"), mcc_std=("mcc", "std"), **_keep_first).reset_index())
     agg.to_csv(RESULTS_DIR / "table_seed_study.csv", index=False)
     PARTIAL.unlink(missing_ok=True) #resume file no longer needed once the phase completed
     log.info("\nVariability of macro-F1 across seeds (maximum standard deviation per dataset):\n%s", agg.groupby("dataset").f1_macro_std.max().round(4).to_string())

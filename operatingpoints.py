@@ -65,6 +65,8 @@ def points_for(y_true, score, dataset, model, n_neg):
         #FPR of exactly 0 means "below the resolution of this test split"
         f_eff = max(f, resolution) if resolution else f
         rec = {"dataset": dataset, "model": model, "fpr_target": target,
+               #The threshold is picked from the ROC of this same test split (oracle operating point)
+               "threshold_selected_on": "test_split",
                "tpr": t, "actual_fpr": f, "fpr_used_for_projection": f_eff,
                "threshold": float(thr[i]) if np.isfinite(thr[i]) else None,
                "n_negatives": int(n_neg), "fpr_resolution": resolution,

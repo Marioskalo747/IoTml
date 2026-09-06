@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from progress import Progress
 from config import FIGURES_DIR, MODELS_DIR, RESULTS_DIR, RANDOM_STATE
-from evaluation import (metric_heatmap, class_f1, pr_curves, roc_curves, roc_pr_points)
+from evaluation import (metric_heatmap, class_f1, pr_curves, roc_curves, roc_pr_points, positive_label)
 from loaders import DATASETS, available_datasets
 from preprocessing import build_xy, split
 #logs
@@ -154,14 +154,18 @@ def shap_for_dataset(name, results):
     try:
         explainer = shap.TreeExplainer(inner)
         shap_values = explainer.shap_values(Xt, check_additivity=False) #fast and tolerant to missing values
+        #LabelEncodedClassifier exposes le_.classes_, so this order matches the inner model's columns.
+        classes = list(getattr(pipe, "classes_", []))
+        ipos = classes.index(positive_label(classes)) if classes else -1
         #variety of outputs by library
         if isinstance(shap_values, list):
-            shap_values = shap_values[1] if len(shap_values) == 2 else shap_values[-1] #binary
+            shap_values = shap_values[ipos]
         elif getattr(shap_values, "ndim", 2) == 3:
-            shap_values = shap_values[:, :, -1]
+            shap_values = shap_values[:, :, ipos]
         plt.figure()
+        np.random.seed(RANDOM_STATE) #the beeswarm jitters with the global RNG; keep figures reproducible
         shap.summary_plot(shap_values, Xt, feature_names=names, show=False, max_display=20) 
-        plt.title(f"SHAP summary for {name} ({best['model']})")
+        plt.title(f"SHAP summary for {name} ({best['model']}, class {classes[ipos] if classes else '?'})")
         plt.tight_layout()
         plt.savefig(FIGURES_DIR / f"shap_{name}.png", dpi=300)
         plt.close("all")

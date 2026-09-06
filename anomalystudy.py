@@ -18,7 +18,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from config import COMMON_FEATURES, FIGURES_DIR, RANDOM_STATE, RESULTS_DIR
+from config import COMMON_FEATURES, FIGURES_DIR, RANDOM_STATE, RESULTS_DIR, TEST_SIZE
 from progress import Progress
 
 
@@ -66,7 +66,8 @@ def main():
         i_ds += 1   
         prog.update(stage="in_domain", dataset=ds, task="in_domain", model="IsolationForest",substage=f"dataset {i_ds} of {len(sources)}", message=f"in-domain: {ds}")
         d = df[df["source"] == ds]
-        tr, te = train_test_split(d, test_size=0.30, random_state=RANDOM_STATE, stratify=d["binary"])
+        #Stratified on target binary here
+        tr, te = train_test_split(d, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=d["binary"])
         ben_tr = tr[tr["binary"] == 0] #train on benign only on train
         if len(ben_tr) < 50:
             log.warning(f"Skipping {ds}: not enough benign training samples ({len(ben_tr)})")

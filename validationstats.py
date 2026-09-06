@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config import COMMON_FEATURES, MODELS_DIR, RANDOM_STATE, RESULTS_DIR
 from loaders import DATASETS, available_datasets
-from preprocessing import build_xy, split
+from preprocessing import build_xy, split, split_meta
 from progress import Progress
 
 N_BOOT = 500 #bootstrap resample 95% confidence
@@ -99,7 +99,8 @@ def detection_at_fpr(y_true_bin, proba_attack, targets=FPR_TARGETS):
     n_neg = int((y == 0).sum())
     #the finest FPR that can be observed at all is 1/n_negatives
     resolution = (1.0 / n_neg) if n_neg else None
-    out = {"n_negatives": n_neg, "fpr_resolution": resolution}
+    #same caveat as operatingpoints.py: the threshold comes from the ROC of the split it is scored on
+    out = {"n_negatives": n_neg, "fpr_resolution": resolution, "threshold_selected_on": "test_split"}
     for t in targets:
         ok = np.where(fpr <= t)[0] #every index where FPR is below the target
         i = ok[-1] if len(ok) else 0 #the most sensitive threshold
@@ -230,8 +231,8 @@ def run_dataset(name, n_boot):
                        "f1_a_full_test": full.get(top2[0]), "f1_b_full_test": full.get(top2[1]), "ranking_source": rank_src, "n_test_mcnemar": int(len(y_te))})
         det = {m: detection_at_fpr(y_te, pr) for m, pr in probas.items()} if task == "binary" else {}
         base = baselines(train_labels[task], y_te, labels) #priors learned on train, scored on test
-
-        results[task] = {"n_test": int(len(y_te)), "labels": labels, "confidence_intervals": ci, "mcnemar_top2": mc, "detection_at_fpr": det, "baselines": base}
+        meta = split_meta(name, train_labels[task], y_te)
+        results[task] = {"n_test": int(len(y_te)), "labels": labels, "confidence_intervals": ci, "mcnemar_top2": mc, "detection_at_fpr": det, "baselines": base, "split_meta": meta}
         log.info("%s/%s: %d models, top2=%s, p=%s", name, task, len(preds), top2, f"{mc['p_value']:.3g}" if mc else "—")
 
     del X_te
@@ -300,15 +301,17 @@ def main():
         if ds.startswith("_"):   # _selection_bias list no dict 
             continue
         for task, r in tasks.items():
+            #split protocol and whether the cell is evaluable at all, on every row of every table
+            sm = {k: r.get("split_meta", {}).get(k) for k in ("split_mode", "evaluable", "not_evaluable_reason", "n_test_classes")}
             for m, c in r["confidence_intervals"].items():
-                ci_rows.append({"dataset": ds, "task": task, "model": m, **c})
+                ci_rows.append({"dataset": ds, "task": task, "model": m, **sm, **c})
             if r["mcnemar_top2"]:
-                mc_rows.append({"dataset": ds, "task": task, **r["mcnemar_top2"]})
+                mc_rows.append({"dataset": ds, "task": task, **sm, **r["mcnemar_top2"]})
             for m, d in r["detection_at_fpr"].items():
-                det_rows.append({"dataset": ds, "task": task, "model": m, **d})
+                det_rows.append({"dataset": ds, "task": task, "model": m, **sm, **d})
             for strat, v in r["baselines"].items():
                 if isinstance(v, dict): #maajority class and share are scalars
-                    bl_rows.append({"dataset": ds, "task": task, "baseline": strat, **v})
+                    bl_rows.append({"dataset": ds, "task": task, "baseline": strat, **sm, **v})
     for rows, fname in ((ci_rows, "table_confidence_intervals.csv"),(mc_rows, "table_mcnemar.csv"),(det_rows, "table_detection_at_fpr.csv"),
                         (bl_rows, "table_baselines.csv")):
         if rows:
