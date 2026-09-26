@@ -1,0 +1,35 @@
+# Exact versions of the environment that produced every result of the thesis
+#   python -m venv .venv
+#   .venv\Scripts\activate           
+#   pip install -r requirements.txt
+# PyTorch: CUDA 12.8 build (torch 2.9.1+cu128) on an NVIDIA RTX 4050
+# pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+# TorchMLP falls back to the CPU automatically.
+# Neural-network results may differ in the last digits between CPU and GPU builds.
+
+#core
+numpy==2.3.5
+pandas==2.3.3
+scipy==1.16.3
+scikit-learn==1.7.2
+imbalanced-learn==0.14.0
+joblib==1.5.2
+
+#boosting and neural networks
+xgboost==3.1.3
+lightgbm==4.6.0
+catboost==1.2.10
+torch==2.9.1
+
+#hyperparameter search, interpretability
+optuna==4.9.0
+statsmodels==0.14.5
+shap==0.52.0
+
+#figures
+matplotlib==3.10.7
+seaborn==0.13.2
+
+#live training monitor
+streamlit==1.58.0
+plotly==6.5.0
