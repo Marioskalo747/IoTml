@@ -76,7 +76,7 @@ def p_attack(pipe, X, positive="Attack"):
 def part_a_cascade(X_tr, X_te, y_tr, y_te, yb_tr, yb_te, name, labels, rows):
     attack_tr = y_tr[yb_tr == 1]
     if attack_tr.nunique() < 2:
-        log.info("  [A] %s: fewer than 2 attack classes in train, cascade not applicable", name)
+        log.info("[cascade] %s: fewer than 2 attack classes in train, cascade not applicable", name)
         return
     Xa, ya = cap(X_tr.loc[attack_tr.index], attack_tr)
     stage2 = fit(STAGE2_MODEL, Xa, ya, ya.nunique())
@@ -92,7 +92,7 @@ def part_a_cascade(X_tr, X_te, y_tr, y_te, yb_tr, yb_te, name, labels, rows):
         r = evaluate_model(single, X_te, y_te.astype(str), labels)
         rows.append({"part": "A_cascade", "dataset": name, "gate": "none (single model)", "threshold": None, "sent_to_stage2": 1.0,
                      **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "mcc")}})
-        log.info("  [A] %s single model: f1_macro=%.4f", name, r["f1_macro"])
+        log.info("[cascade] %s single model: f1_macro=%.4f", name, r["f1_macro"])
         del single
         gc.collect()
 
@@ -102,7 +102,7 @@ def part_a_cascade(X_tr, X_te, y_tr, y_te, yb_tr, yb_te, name, labels, rows):
         try:
             gate = fit(gate_name, Xg, yg, 2)
         except Exception as e:
-            log.warning("  [A] %s/%s: gate failed to fit (%s)", name, gate_name, e)
+            log.warning("[cascade] %s/%s: gate failed to fit (%s)", name, gate_name, e)
             continue
         if gate is None:
             continue
@@ -118,7 +118,7 @@ def part_a_cascade(X_tr, X_te, y_tr, y_te, yb_tr, yb_te, name, labels, rows):
         try:
             pa = p_attack(gate, X_te)
         except Exception:
-            log.warning("  [A] %s/%s: gate exposes no usable probabilities", name, gate_name)
+            log.warning("[cascade] %s/%s: gate exposes no usable probabilities", name, gate_name)
             del gate
             gc.collect()
             continue
@@ -132,7 +132,7 @@ def part_a_cascade(X_tr, X_te, y_tr, y_te, yb_tr, yb_te, name, labels, rows):
             rows.append({"part": "A_cascade", "dataset": name, "gate": gate_name, "threshold": float(f"{thr:.6g}"), "calibrated_1pct_train_fpr": bool(calibrated),
                          "sent_to_stage2": float(flags.mean()), #what the alert budget actually cost on the test split
                          "test_benign_forwarded": (float(flags[te_benign].mean()) if te_benign.any() else None), **{k: r[k] for k in ("accuracy", "balanced_accuracy", "f1_macro", "mcc")}})
-        log.info("  [A] %s gate=%s: %d operating points measured", name, gate_name, len(thrs))
+        log.info("[cascade] %s gate=%s: %d operating points measured", name, gate_name, len(thrs))
         del gate
         gc.collect()
 
@@ -156,7 +156,7 @@ def part_b_specialists(X_tr, X_te, y_tr, y_te, name, labels, rows):
         try:
             spec = fit(SPECIALIST_MODEL, Xc, ovr_tr, 2)
         except Exception as e:
-            log.warning("  [B] %s/%s: specialist failed to fit (%s)", name, cls, e)
+            log.warning("[specialists] %s/%s: specialist failed to fit (%s)", name, cls, e)
             continue
         if spec is None:
             continue
@@ -192,7 +192,7 @@ def part_b_specialists(X_tr, X_te, y_tr, y_te, name, labels, rows):
                      "specialist_precision": p2, "specialist_recall": r2, "specialist_f1": f2,
                      "delta_f1": f2 - f1, "mcnemar_p": p_val,
                      "only_single_correct": n10, "only_specialist_correct": n01})
-        log.info("  [B] %s/%s: single f1=%.4f specialist f1=%.4f (%+.4f, p=%s)", name, cls, f1, f2, f2 - f1, f"{p_val:.3g}" if p_val is not None else "n/a")
+        log.info("[specialists] %s/%s: single f1=%.4f specialist f1=%.4f (%+.4f, p=%s)", name, cls, f1, f2, f2 - f1, f"{p_val:.3g}" if p_val is not None else "n/a")
         del spec
         gc.collect()
 
@@ -202,7 +202,7 @@ def part_c_transfer(rows):
     cache = RESULTS_DIR / "common_cache"
     frames = {n: pd.read_pickle(cache / f"{n}.pkl") for n in available_datasets() if (cache / f"{n}.pkl").exists()}
     if len(frames) < 2:
-        log.warning("  [C] need at least two cached datasets, found %d", len(frames))
+        log.warning("[transfer] need at least two cached datasets, found %d", len(frames))
         return
     for n, d in frames.items():
         d[COMMON_FEATURES] = (d[COMMON_FEATURES].astype(np.float64).replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-1e12, 1e12))
@@ -213,7 +213,7 @@ def part_c_transfer(rows):
                 continue
             shared = sorted(set(src["label"]) & set(tgt["label"]))
             if len(shared) < 2:
-                log.info("  [C] %s -> %s: fewer than 2 shared classes, skipped", source, target)
+                log.info("[transfer] %s -> %s: fewer than 2 shared classes, skipped", source, target)
                 continue
             s = src[src["label"].isin(shared)]
             t = tgt[tgt["label"].isin(shared)]
@@ -226,7 +226,7 @@ def part_c_transfer(rows):
                     continue  #the class exists in the source but has no rows in this target
                 rows.append({"part": "C_transfer", "source": source, "target": target,"class": pc["class"], "support": pc["support"],
                              "precision": pc["precision"], "recall": pc["recall"], "f1": pc["f1"],"n_train": int(len(s))})
-            log.info("  [C] %s -> %s: %d shared classes, f1_macro=%.4f", source, target, len(shared), r["f1_macro"])
+            log.info("[transfer] %s -> %s: %d shared classes, f1_macro=%.4f", source, target, len(shared), r["f1_macro"])
             del clf
             gc.collect()
 
