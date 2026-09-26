@@ -22,7 +22,7 @@ def find(root: Path, pattern: list[str]):
         return out
     for p in pattern:
         out.extend(root.rglob(p))
-    return sorted({p for p in out if "_local_cache" not in str(p) }) #set removes duplicates
+    return sorted({p for p in out if "local_cache" not in str(p) }) #set removes duplicates
 
 '''Preserve capture time in the reserved TS_COL so split() order rows chronologically'''
 def attach_timestamp(df: pd.DataFrame, candidates):
@@ -188,7 +188,7 @@ def finalize_common(common: pd.DataFrame, df: pd.DataFrame):
 def localize(path: Path):
     if path.drive.lower() == Path(__file__).drive.lower():
         return path #same drive
-    cache = Path(__file__).resolve().parents[1] / "datasets/_local_cache"   ####### 1 h 0
+    cache = Path(__file__).resolve().parents[1] / "datasets/local_cache"   ####### 1 h 0
     cache.mkdir(parents=True, exist_ok=True)
     dest = cache / path.name
     size = path.stat().st_size
@@ -656,7 +656,7 @@ def read_csv_sampled(path: Path, per_file: int):
 '''Generic dataset loader for unknown datasets'''
 def generic_loader(name: str, folder: Path, label_col=None, glob_pat="*.csv"):
     def loader(cap: int = MAX_ROWS_PER_DATASET):
-        files = sorted(p for p in folder.rglob(glob_pat) if "_local_cache" not in str(p) and not p.name.endswith(".pcap.csv"))
+        files = sorted(p for p in folder.rglob(glob_pat) if "local_cache" not in str(p) and not p.name.endswith(".pcap.csv"))
         if not files:
             raise FileNotFoundError(f"no {name} CSV found in {folder}")
         per_file = max(cap*2//len(files), 5000)
@@ -724,7 +724,7 @@ def discover_candidates():
     config = load_dataset_config().get("custom", {})
     for sub in sorted(p for p in root.iterdir() if p.is_dir()):
         nm = sub.name.lower()
-        if nm in BUILTIN_DATASETS or nm == "_local_cache":
+        if nm in BUILTIN_DATASETS or nm == "local_cache":
             continue #builtin datasets are already registered
         csvs = [p for p in sub.rglob("*.csv") if not p.name.endswith(".pcap.csv")]
         if not csvs:
