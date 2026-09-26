@@ -181,7 +181,7 @@ def main():
     check_logs()
     compare_archive(args.compare_archive)
     ts = datetime.now().strftime("%H:%M:%S")
-    print(f"\n{'='*72}\nSANITY CHECK  {ts}\n{'='*72}")
+    print(f"SANITY CHECK  {ts}")
     if not args.quiet:
         for m in notes:
             print(f"  ·  {m}")
@@ -191,7 +191,7 @@ def main():
         print(f"  X  {m}")
     if not problems and not warningsm:
         print("  no problems")
-    print(f"{'='*72}")
+    
     sys.exit(1 if problems else 0) #problems are considered failure
 
 
