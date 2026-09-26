@@ -1,11 +1,11 @@
-# Exact versions of the environment that produced every result of the thesis
+#Versions of the environment that produced every result of the thesis
 #   python -m venv .venv
 #   .venv\Scripts\activate           
 #   pip install -r requirements.txt
 # PyTorch: CUDA 12.8 build (torch 2.9.1+cu128) on an NVIDIA RTX 4050
 # pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
-# TorchMLP falls back to the CPU automatically.
-# Neural-network results may differ in the last digits between CPU and GPU builds.
+# Otherwise TorchMLP falls back to the CPU automatically.
+# Neural network results may differ in the last digits between CPU and GPU builds.
 
 #core
 numpy==2.3.5
