@@ -142,9 +142,9 @@ def part_a_imbalance(X_train, Xtest, y_train, y_test, dataset, task):
                 m = metrics(res)
                 record("imbalance", {**m, "train_time_s": t, "train_rows": len(Xa)}, dataset=dataset, task=task, model=model_name, variant=strategy)
                 rows_for_plot.append({"model": model_name, "imbalance": strategy, "f1_macro": m["f1_macro"]})
-                log.info("[A] %s/%s %s × %s: f1m=%.4f (%.0fs)", dataset, task, model_name, strategy, m["f1_macro"], t)
+                log.info("[part-a] %s/%s %s × %s: f1m=%.4f (%.0fs)", dataset, task, model_name, strategy, m["f1_macro"], t)
             except Exception as e:
-                log.exception("[A] FAIL %s/%s %s × %s: %s", dataset, task, model_name, strategy, e)
+                log.exception("[part-a] FAIL %s/%s %s × %s: %s", dataset, task, model_name, strategy, e)
                 
             gc.collect()
     #SINK built figure to cover resume restored results 
@@ -174,9 +174,9 @@ def part_b_fs(X_train, Xtest, y_train, y_test, dataset, task):
                 m = metrics(res)
                 #feature list only <=60 otherwise too long for json
                 record("feature_selection", {**m, "train_time_s": t, "n_features": len(kept), "n_features_orig": X_train.shape[1], "kept_features": kept if len(kept) <=60 else None}, dataset=dataset, task=task, model=model_name, variant=strategy)
-                log.info("[B] %s/%s %s x %s: %d features f1m=%.4f (%.0fs)", dataset, task, model_name, strategy, len(kept), m["f1_macro"], t)
+                log.info("[part-b] %s/%s %s x %s: %d features f1m=%.4f (%.0fs)", dataset, task, model_name, strategy, len(kept), m["f1_macro"], t)
             except Exception as e:
-                log.exception("[B] FAIL %s/%s %s x %s: %s", dataset, task, model_name, strategy, e)
+                log.exception("[part-b] FAIL %s/%s %s x %s: %s", dataset, task, model_name, strategy, e)
             gc.collect()
             
 '''Part c learning curve analysis (sample size)'''           
@@ -200,9 +200,9 @@ def part_c_sample_size(X_train, Xtest, y_train, y_test, dataset, task):
                 res, t, _ = fit_eval(specif.build(), Xa, ya, Xtest, y_test, labels) #same test set for all sizes
                 m = metrics(res)
                 record("learning_curve", {**m, "train_time_s": t, "sample_size": len(Xa)}, dataset=dataset, task=task, model=model_name, variant=str(size))
-                log.info("[C] %s/%s %s x %d: f1m=%.4f (%.0fs)", dataset, task, model_name, size, m["f1_macro"], t)
+                log.info("[part-c] %s/%s %s x %d: f1m=%.4f (%.0fs)", dataset, task, model_name, size, m["f1_macro"], t)
             except Exception as e:
-                log.exception("[C] FAIL %s/%s %s x %d: %s", dataset, task, model_name, size, e)
+                log.exception("[part-c] FAIL %s/%s %s x %d: %s", dataset, task, model_name, size, e)
             gc.collect()
     prev = [r for r in SINK if r["kind"] == "learning_curve" and r["dataset"] == dataset and r["task"] == task]
     if prev:
@@ -242,9 +242,9 @@ def part_d_cv(X_train, y_train, dataset, task, cap=CAP, cv_models=None):
                     PROGRESS.advance(model=model_name, substage=f"{model_name} - fold {i + 1} of 5")
             #summary record for the 5-fold cross-validation (mean ± std)
             record("cross_validation", {"f1_macro_mean": float(np.mean(scores)), "f1_macro_std": float(np.std(scores)), "folds": scores, "cv_rows": len(Xs)}, dataset=dataset, task=task, model=model_name, variant="5fold")
-            log.info("[D] %s/%s %s: f1m=%.4f ± %.4f", dataset, task, model_name, np.mean(scores), np.std(scores))
+            log.info("[part-d] %s/%s %s: f1m=%.4f ± %.4f", dataset, task, model_name, np.mean(scores), np.std(scores))
         except Exception as e:
-            log.exception("[D] FAIL %s/%s %s: %s", dataset, task, model_name, e)
+            log.exception("[part-d] FAIL %s/%s %s: %s", dataset, task, model_name, e)
         gc.collect()
     if fold_rows:
         cv_boxes(fold_rows, dataset, task, FIGURES_DIR / f"cv_folds_{dataset}_{task}.png")
