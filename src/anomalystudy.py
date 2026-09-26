@@ -82,7 +82,7 @@ def main():
         for lab, g in att.groupby("label"):
             per_class[lab] = float(score(scaler , clf, g).mean())
         results.append({"protocol": "in_domain", "dataset": ds, "n_benign_train": len(ben_tr), "detection_rate": det, "fpr_benign": fpr, "per_class_detection": per_class})
-        log.info("[A] %s: detection=%.3f, fpr=%.3f, per_class=%s", ds, det or -1, fpr or -1, per_class)
+        log.info("[in-domain] %s: detection=%.3f, fpr=%.3f, per_class=%s", ds, det or -1, fpr or -1, per_class)
         prog.advance()  
         gc.collect()
     #cross-domain: train on all other datasets, test on held-out dataset    
@@ -102,7 +102,7 @@ def main():
         fpr = float(score(scaler , clf, ben).mean()) if len(ben) else None
         per_class = {lab: float(score(scaler , clf, g).mean()) for lab, g in att.groupby("label")}
         results.append({"protocol": "cross_domain", "dataset": held, "n_benign_train": len(ben_src), "detection_rate": det, "fpr_benign": fpr, "per_class_detection": per_class})
-        log.info("[B] %s: detection=%.3f, fpr=%.3f, per_class=%s", held, det or -1, fpr or -1, per_class)
+        log.info("[cross-domain] %s: detection=%.3f, fpr=%.3f, per_class=%s", held, det or -1, fpr or -1, per_class)
         prog.advance() 
         gc.collect()
         
