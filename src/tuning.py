@@ -109,9 +109,9 @@ def tune_one(model_name, X_train, X_test, y_train, y_test, dataset, task, n_tria
     #the search runs on a subsample but the winner is refitted on the full training split
     Xs, ys = subsample(X_train, y_train, tune_rows) #small sample
     search_fraction = len(Xs) / max(len(X_train), 1)
-    log.info("[T] %s/%s: tuning %s on %d of %d training rows (%.1f%%, %d classes)", dataset, task, model_name, len(Xs), len(X_train), 100 * search_fraction, n_classes)
+    log.info("[Tune] %s/%s: tuning %s on %d of %d training rows (%.1f%%, %d classes)", dataset, task, model_name, len(Xs), len(X_train), 100 * search_fraction, n_classes)
     if search_fraction < 0.5:
-        log.warning("[T] %s/%s/%s: hyperparameters searched on %.1f%% of the training rows they are refitted on", dataset, task, model_name, 100 * search_fraction)
+        log.warning("[Tune] %s/%s/%s: hyperparameters searched on %.1f%% of the training rows they are refitted on", dataset, task, model_name, 100 * search_fraction)
     skf = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
     
     '''mean f1 macro over 3 folds (optuna objective)'''
@@ -168,7 +168,7 @@ def tune_one(model_name, X_train, X_test, y_train, y_test, dataset, task, n_tria
     tuned_fallback = None
     _drop = res_d["f1_macro"] - res["f1_macro"]
     if _drop > TUNED_FALLBACK_DROP:
-        log.warning("[T] %s/%s/%s: refit macro-F1 %.4f against %.4f for the untuned default (-%.4f) -> "
+        log.warning("[Tune] %s/%s/%s: refit macro-F1 %.4f against %.4f for the untuned default (-%.4f) -> "
                     "rejecting the search result and keeping the default configuration",
                     dataset, task, model_name, res["f1_macro"], res_d["f1_macro"], _drop)
         tuned_fallback = {"rejected_params": dict(study.best_params), "rejected_f1_macro": float(res["f1_macro"]),
