@@ -17,7 +17,7 @@ ap.add_argument("--data", type=Path, default=HERE,
 DATA = ap.parse_known_args()[0].data.resolve()
 NA = "—"   # prediction for a flow the model cannot read
 
-st.set_page_config(page_title="IoT IDS · Demo", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="IoT IDS Demo", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""<style>
   .block-container{padding-top:2rem;max-width:1400px}
@@ -103,13 +103,13 @@ labels = truth.loc[flows.index, "label"].astype(str).values  #true labels
 
 AVAILABLE = sorted(p.stem for p in (DATA / "models").glob("*.joblib"))
 
-st.sidebar.markdown("### Models")
+st.sidebar.markdown("Models")
 chosen = st.sidebar.multiselect("Up to four", AVAILABLE, default=AVAILABLE[:4],
                                 max_selections=4, label_visibility="collapsed")
-st.sidebar.markdown("### Capture")
+st.sidebar.markdown("Capture")
 st.sidebar.markdown(f"<div class='lead'>{len(packets):,} packets<br>{len(flows):,} flows"
                     f"<br>{truth['label'].nunique()} classes</div>", unsafe_allow_html=True)
-st.sidebar.markdown("### Origin")
+st.sidebar.markdown("Origin")
 st.sidebar.dataframe(truth["source_dataset"].value_counts().rename("flows"), width="stretch")  #how many flows per dataset
 
 st.title("From packet to decision")
@@ -135,7 +135,7 @@ if not results:
 
 #Five stages of pipeline
 tab_cap, tab_flow, tab_pred, tab_score, tab_one = st.tabs(
-    ["1 · Capture", "2 · Flows", "3 · Predictions", "4 · Performance", "5 · One flow step by step"])
+    ["1 Capture", "2 Flows", "3 Predictions", "4 Performance", "5  One flow step by step"])
 
 #1 capture
 with tab_cap:
@@ -176,10 +176,10 @@ with tab_flow:
 | `duration` | last − first timestamp of the flow |
 | `total_pkts` | number of packets |
 | `total_bytes` | sum of the `Payload` column, with each dataset's definition (payload only in TON-IoT, with headers in the other three) |
-| `pkt_rate` · `byte_rate` | divided by the duration — **zero** if the duration is zero |
+| `pkt_rate` `byte_rate` | divided by the duration — **zero** if the duration is zero |
 | `avg_pkt_size` | bytes ÷ packets |
 | `proto_tcp/udp/icmp` | one-hot of the protocol |
-| `src_port` · `dst_port` | from the **first** packet, which sets the direction |
+| `src_port` `dst_port` | from the **first** packet, which sets the direction |
 
 Same computation as the study's loaders.
 
@@ -223,13 +223,13 @@ with tab_score:
         c.markdown(
             f"<div class='card'><div class='k'>{name}</div>"
             f"<div class='v'>{acc*100:.1f}%</div>"
-            f"<div class='k' style='margin-top:10px'>correct class · {int(k.sum())} of {len(flows)} flows</div>"
+            f"<div class='k' style='margin-top:10px'>correct class {int(k.sum())} of {len(flows)} flows</div>"
             f"<div style='margin-top:12px;font-size:.85rem'>"
             f"attacks caught <b>{rec*100:.1f}%</b><br>"
-            f"correct <b class='ok'>{int((r['pred'][k]==labels[k]).sum())}</b> · "
+            f"correct <b class='ok'>{int((r['pred'][k]==labels[k]).sum())}</b> "
             f"wrong <b class='bad'>{int((r['pred'][k]!=labels[k]).sum())}</b><br>"
             f"reads {reads}<br>"
-            f"{r['us_per_flow']:.1f} μs/flow · {int(k.sum())/max(r['seconds'],1e-9):,.0f} flows/s"
+            f"{r['us_per_flow']:.1f} μs/flow {int(k.sum())/max(r['seconds'],1e-9):,.0f} flows/s"
             f"</div></div>", unsafe_allow_html=True)
     #Per class recall table
     st.markdown("#### Per class")
@@ -253,8 +253,8 @@ with tab_one:
     #packets, featutes, model's detection for one flow
     st.subheader("One flow, the whole chain")
     f = st.selectbox("Pick a flow", list(flows.index),
-                     format_func=lambda i: f"#{i} · {truth.loc[i,'label']} · {truth.loc[i,'source_dataset']} · "
-                                           f"{truth.loc[i,'protocol']} · {truth.loc[i,'n_packets']} packets")
+                     format_func=lambda i: f"#{i} {truth.loc[i,'label']} {truth.loc[i,'source_dataset']} "
+                                           f"{truth.loc[i,'protocol']} {truth.loc[i,'n_packets']} packets")
     st.markdown("**Step 1 — its packets**")
     st.dataframe(packets[packets.flow_id == f][
         ["No.", "Time", "Source", "Destination", "Protocol", "Length", "Payload", "Info"]],
