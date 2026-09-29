@@ -141,10 +141,10 @@ tab_cap, tab_flow, tab_pred, tab_score, tab_one = st.tabs(
 with tab_cap:
     #raw packets as a packet analyzer would see them
     st.subheader("The traffic as a packet analyzer would show it")
-    st.markdown("<p class='lead'>Same columns as a Wireshark export. <code>Payload</code> "
+    st.markdown("<p class='lead'>Same columns as a Wireshark export. Payload "
                 "is the bytes the source dataset counts for each packet: payload only in "
                 "TON-IoT, bytes including headers in BoT-IoT, IoT-23 and CICIoT2023. "
-                "<code>Length</code> adds a nominal frame header, for display only.</p>", unsafe_allow_html=True)
+                "Length adds a nominal frame header, for display only.</p>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1, 2])
     protos = ["all"] + sorted(packets["Protocol"].unique())
     fp = c1.selectbox("Protocol", protos)
