@@ -12,7 +12,7 @@ for s in (sys.stdout, sys.stderr):
 
 PROJECT_DIR = Path(__file__).parent
 
-DATASET_DIR_CANDIDATES= [Path(r"C:\Users\kalou\Downloads\κωδικας3\datasets"), PROJECT_DIR.parent / "datasets", PROJECT_DIR / "datasets"]    ########PATHS
+DATASET_DIR_CANDIDATES= [Path(PROJECT_DIR.parent / "datasets", PROJECT_DIR / "datasets"]    ########PATHS
 
 #pick datasets (first candidate that exists)
 def dataset_dir():
