@@ -82,15 +82,15 @@ A folder made with `--out` is opened the same way: `streamlit run demo/app.py --
 
 ## Where the traffic comes from
 
-The packets are synthetic, **their statistics are not**. Every flow is a real record from the pooled test split, the 30% that **no** model saw during training. The flow
+The packets are synthetic but statistics aren't. Every flow is a real record from the pooled test split, the 30% that no model saw during training. The flow
 is decomposed into the packets that would have produced it, so that the demo shows the whole
 chain without inventing statistics that no model has encountered.
 
 **Verification that the flows are unseen.** The test split is rebuilt with the same
 concatenation order, the same deduplication and the same seed as `runall.py`. The reconstruction
-reproduces **exactly** the recorded confusion matrices of all three models in
-`results_matched/all_results.json`, and the 264 flows are **all** in the test and
-**none** in the train. If the cache does not match the run that trained the models,
+reproduces the recorded confusion matrices of all three models in
+`results_matched/all_results.json`, and the 264 flows are all in the test and
+none in the train. If the cache does not match the run that trained the models,
 `make_traffic.py` stops instead of producing a sample that is not held-out.
 
 **Fidelity verification.** The aggregation recovers **264/264** of `duration`, `total_pkts`,
@@ -106,7 +106,7 @@ Predictions on the reconstructed flows compared with the original features:
 
 The deviations are in `pkt_rate`/`byte_rate` and **86 of 86 concern CICIoT2023 flows**,
 the other three sets are recovered 100%. The cause is documented: that set does not
-compute `pkt_rate` from the packets but keeps its own `rate` field, which **no**
+compute `pkt_rate` from the packets but keeps its own `rate` field, which no
 packet capture can reproduce. In 3 of these flows `byte_rate` also deviates,
 by ≤0.01%: they last a few microseconds and the time is written in
 nanoseconds, as in Wireshark.
@@ -114,7 +114,7 @@ nanoseconds, as in Wireshark.
 **Representativeness.** `MAX_PKTS = 120` limit. At 40 packets the
 sample covered just **0.3%** of the Mirai flows, with a median of 21 packets against 100 in the true
 distribution, and 67% of the DDoS. These classes were not represented. At 120 the
-coverage is **99.8–100% in every class** and the sample median equals the true one in all **12 classes**.
+coverage is **99.8–100% in every class** and the sample median equals the true one in all 12 classes.
 
 **No identifier leakage.** The models accept only the eleven features.
 The IPs, the timestamps and `flow_id` exist in `packets.csv` only for human
@@ -149,7 +149,7 @@ of the two sets.
 
 ## Why the `native_*.csv` are needed
 
-The per-dataset models do **not** accept the 11 common features. They accept the Zeek fields:
+The per-dataset models don't accept the 11 common features. They accept the Zeek fields:
 `conn_state`, `service`, bytes and packets per direction, the `dns_*`/`ssl_*`/`http_*` in TON-IoT,
 the windowed `w5_*`/`w10_*` in IoT-23. None of these exists in the synthetic packets.
 The app reads them from `native_<dataset>.csv`, and each model is scored only on the flows of its own
@@ -161,7 +161,7 @@ set (on the others it shows "—"). A TON-IoT model cannot read an IoT-23 flow.
 |---|---|---|
 | TON-IoT | Benign, Botnet, BruteForce, DDoS, DoS, Injection, Ransomware, Recon, Spoofing_MITM, Web | 20 each |
 | IoT-23 | Benign, Botnet, Recon | 20 each |
-| IoT-23 | DDoS | **only 9** |
+| IoT-23 | DDoS | only 9 |
 
 The IoT-23 models know only these four classes. The study's IoT-23 has no
 others (the rare ones were merged or removed at load time).
