@@ -255,19 +255,19 @@ with tab_one:
     f = st.selectbox("Pick a flow", list(flows.index),
                      format_func=lambda i: f"#{i} {truth.loc[i,'label']} {truth.loc[i,'source_dataset']} "
                                            f"{truth.loc[i,'protocol']} {truth.loc[i,'n_packets']} packets")
-    st.markdown("**Step 1 — its packets**")
+    st.markdown("Step 1 packets")
     st.dataframe(packets[packets.flow_id == f][
         ["No.", "Time", "Source", "Destination", "Protocol", "Length", "Payload", "Info"]],
         width="stretch", hide_index=True)
 
-    st.markdown("**Step 2 — the eleven features they produce**")
+    st.markdown("Step 2 the 11 features they produce")
     st.dataframe(flows.loc[[f]], width="stretch")
     src_ds = truth.loc[f, "source_dataset"]
     if src_ds in native and f in native[src_ds].index:
         st.markdown(f"**Step 2b — the fields of {src_ds} read by that dataset's models**")
         st.dataframe(native[src_ds].loc[[f]], width="stretch")
 
-    st.markdown("**Step 3 — each model's decision**")
+    st.markdown("Step 3 model's decision")
     pos = list(flows.index).index(f)  #row position of the flow in the results arrays
     truth_lab = labels[pos]
     rows = []
