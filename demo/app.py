@@ -283,8 +283,8 @@ st.divider()
 if DATA == HERE:
     #default folder
     st.markdown(
-        "<p class='lead'>The models are the study's <code>combined</code> ones (<code>models_matched</code>), "
-        "all three trained on ~250,000 rows (matched budget). They accept only "
+        "<p class='lead'>The models are the study's combined ones (models_matched), "
+        "all three trained on 250,000 rows (matched budget). They accept only "
         "the eleven common features and they are the only portable ones. On the full test split "
         "they flag 5.5–9.5% of benign traffic as attacks. On a real network with "
         "~0.1% attack prevalence this gives a PPV of just 0.01–0.02"
@@ -293,8 +293,8 @@ elif any(r["reads"] for r in results.values()):
     #Alternative folder with native_<dataset>.csv
     st.markdown(
         "<p class='lead'>Models with a dataset prefix were trained only on that dataset "
-        "(<code>models_matched</code>), with its Zeek fields (<code>conn_state</code>, "
-        "<code>service</code>, bytes per direction, etc.). These are not derived from the demo's "
+        "(models_matched), with its Zeek fields (conn_state, "
+        "service, bytes per direction, etc.). These are not derived from the demo's "
         "packets, so they are read from <code>native_&lt;dataset&gt;.csv</code> and the models are scored only "
         "on their own dataset's flows. Every flow is in its dataset's test split and "
         "in the pooled test split: no model, per-dataset or combined, has seen it.</p>", unsafe_allow_html=True)
