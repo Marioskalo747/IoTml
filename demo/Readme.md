@@ -3,7 +3,7 @@
 A self-contained folder that shows the whole chain of a detection system:
 
 
-packet capture -> aggregation into flows -> 11 features → model -> decision
+packet capture -> aggregation into flows -> 11 features -> model -> decision
 
 
 The same app (`app.py`) runs on two data folders:
