@@ -48,6 +48,42 @@ Nothing has to be generated first: the CSVs and the models of both sets are incl
 | `iot23_toniot/models/` | `ton_iot__XGBoost`, `ton_iot__CatBoost`, `iot23__XGBoost`, `iot23__CatBoost` copies of `src/models_matched/<dataset>__multiclass__*.joblib` |
 | `iot23_toniot/make_subset.py` | rebuilds everything in `iot23_toniot/` from the original datasets (IoT-23 takes ~5 minutes) |
 
+IoTml/                                   <- ο φάκελος του project (εδώ τρέχουν οι εντολές)
+│
+├── src/
+│   ├── config.py                        🟦 σταθερές
+│   ├── preprocessing.py                 🟦 ο preprocessor μέσα στα .joblib
+│   ├── models_zoo.py                    🟦 LabelEncodedClassifier (XGBoost)
+│   ├── torchmlp.py                      🟦 το TorchMLP
+│   └── requirements.txt                 🟩 εκδόσεις βιβλιοθηκών
+│
+└── demo/
+    ├── app.py                           🟦 η εφαρμογή Streamlit (5 καρτέλες)
+    ├── app2.py                          🟦 ίδια εφαρμογή, αισθητικές διαφορές
+    ├── live.py                          🟦 ζωντανή προβολή πακέτα → ροές → απόφαση
+    ├── flowize.py                       🟦 συνάθροιση πακέτων σε ροές
+    ├── make_traffic.py                  🟦 (προαιρετικό) ξαναφτιάχνει τα CSV του σετ 1
+    ├── README.md  README_el.md          🟩 οδηγίες (EN / EL)
+    ├── packets.csv                      🟩 4.704 πακέτα
+    ├── flows.csv                        🟩 264 ροές με την αληθινή κλάση
+    ├── models/                          🟩 τα 3 μοντέλα του combined
+    │   ├── CatBoost.joblib
+    │   ├── XGBoost.joblib
+    │   └── TorchMLP.joblib
+    │
+    └── iot23_toniot/                    σετ 2: TON-IoT + IoT-23
+        ├── make_subset.py               🟦 (προαιρετικό) ξαναφτιάχνει το σετ 2
+        ├── README.md                    🟩
+        ├── packets.csv                  🟩 2.109 πακέτα
+        ├── flows.csv                    🟩 269 ροές
+        ├── native_ton_iot.csv           🟩 αρχικά πεδία Zeek
+        ├── native_iot23.csv             🟩 αρχικά πεδία Zeek
+        └── models/                      🟩 4 μοντέλα ανά σύνολο
+            ├── ton_iot__XGBoost.joblib
+            ├── ton_iot__CatBoost.joblib
+            ├── iot23__XGBoost.joblib
+            └── iot23__CatBoost.joblib
+
 ## Rebuilding the data (optional)
 
 Only needed to draw a different sample or after a new run, the demo itself does not need it.
