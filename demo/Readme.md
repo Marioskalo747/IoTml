@@ -31,7 +31,7 @@ streamlit run demo/app.py -- --data demo/iot23_toniot
 
 The `--` before `--data` is required: without it Streamlit tries to read `--data` as its own flag.
 
-Nothing has to be generated first: the CSVs and the models of both sets are included in #https://drive.google.com/drive/folders/1fAUY85S_PFuEEd2b6peL7fIt_bXOBQPr?usp=drive_link. The app opens at **http://localhost:8501**.
+Nothing has to be generated first: the CSVs and the models of both sets are included in [Google Drive](https://drive.google.com/drive/folders/1fAUY85S_PFuEEd2b6peL7fIt_bXOBQPr?usp=drive_link). The app opens at **http://localhost:8501**.
 
 ## What it contains
 
