@@ -48,6 +48,53 @@ Nothing has to be generated first: the CSVs and the models of both sets are incl
 | `iot23_toniot/models/` | `ton_iot__XGBoost`, `ton_iot__CatBoost`, `iot23__XGBoost`, `iot23__CatBoost` copies of `src/models_matched/<dataset>__multiclass__*.joblib` |
 | `iot23_toniot/make_subset.py` | rebuilds everything in `iot23_toniot/` from the original datasets (IoT-23 takes ~5 minutes) |
 
+## Folder structure
+Copy the Drive files into the **same places** of the tree.
+```
+IoTml/                                 
+│
+├── src/                                (these are needed by the demo)
+│   ├── config.py                       
+│   ├── preprocessing.py                preprocessor stored inside the .joblib
+│   ├── models_zoo.py                   LabelEncodedClassifier (XGBoost)
+│   ├── torchmlp.py                     TorchMLP
+│   └── requirements.txt                
+│
+└── demo/
+    ├── Readme.md                       
+    ├── app.py                             
+    ├── flowize.py                       
+    ├── make_traffic.py                    
+    ├── packets.csv                     4,704 packets
+    ├── flows.csv                       264 flows with the true class
+    ├── models/                         the 3 combined models
+    │   ├── CatBoost.joblib
+    │   ├── XGBoost.joblib
+    │   └── TorchMLP.joblib
+    │
+    └── iot23_toniot/                   TON-IoT + IoT-23
+        ├── make_subset.py              (optional) rebuilds set 2
+        ├── packets.csv                 2,109 packets
+        ├── flows.csv                   269 flows
+        ├── native_ton_iot.csv          native Zeek fields
+        ├── native_iot23.csv            native Zeek fields
+        └── models/                     the 4 per-dataset models
+            ├── ton_iot__XGBoost.joblib
+            ├── ton_iot__CatBoost.joblib
+            ├── iot23__XGBoost.joblib
+            └── iot23__CatBoost.joblib
+```
+
+The demo does **not** need the datasets or `src/results/`. The saved models contain objects from
+`src/`, so the four `src` files above must be present. Without `torch`, TorchMLP is skipped with a
+warning and the app runs with the other models.
+
+```bash
+pip install -r src/requirements.txt
+streamlit run demo/app.py
+streamlit run demo/app.py -- --data demo/iot23_toniot
+```
+
 IoTml/                                   <- ο φάκελος του project (εδώ τρέχουν οι εντολές)
 │
 ├── src/
