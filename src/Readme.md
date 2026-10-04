@@ -39,13 +39,13 @@
 | # | Ερώτημα | Script(s) |
 |---|---|---|
 | RQ1 | Πόσο καλά ανιχνεύουν και ταξινομούν τις επιθέσεις 15 ταξινομητές σε 4 IoT datasets και στην ένωσή τους, με τον στρωματοποιημένο τυχαίο διαχωρισμό της βιβλιογραφίας; | `runall.py`, `tuning.py` |
-| RQ2 | Είναι πραγματικές οι διαφορές μεταξύ των καλύτερων μοντέλων, και αλλάζει ο νικητής όταν το μοντέλο επιλέγεται με διασταυρούμενη επικύρωση αντί για το test split; | `validationstats.py`, `seedstudy.py`, `extendedstudy.py` (μέρος D), `validated_selection.py` (`cv`) |
+| RQ2 | Είναι πραγματικές οι διαφορές μεταξύ των καλύτερων μοντέλων, και αλλάζει ο νικητής όταν το μοντέλο επιλέγεται με διασταυρούμενη επικύρωση αντί για το test split; | `validationstats.py`, `seedstudy.py`, `extendedstudy.py` (μέρος D), `valid_selection.py` (`cv`) |
 | RQ3 | Πόση από την απόδοση προέρχεται από χαρακτηριστικά που αντανακλούν το εργαστήριο (θύρες, συγκεντρωτικά ανά IP, window context, η ίδια η ταυτότητα του dataset); | `leakage_ablation.py`, `domainshift_study.py` |
 | RQ4 | Τι απομένει από την απόδοση σε δίκτυο που το μοντέλο δεν έχει δει, και μπορεί η ανίχνευση ανωμαλιών να βρει άγνωστες επιθέσεις; | LODO στο `runall.py`, `domainshift_study.py`, `specialiststudy.py` (μέρος C), `anomalystudy.py`, `anomalysweep.py` |
 | RQ5 | Τι συμβαίνει όταν το μοντέλο εκπαιδεύεται στο παρελθόν και αξιολογείται στο μέλλον; | χρονολογικός βραχίονας (`runfull.py --temporal-arm`) |
 | RQ6 | Βοηθούν οι συνήθεις τεχνικές βελτίωσης (βελτιστοποίηση υπερπαραμέτρων, στρατηγικές ανισορροπίας, εκπαίδευση με κόστος, επιλογή χαρακτηριστικών, εξειδικευμένοι ανιχνευτές, κλιμακωτά σχήματα); | `tuning.py`, `extra_studies.py`, `confirm_tuning_seeds.py`, `extendedstudy.py` (A, B), `deepstudy.py`, `costsensitive.py`, `specialiststudy.py` (A, B) |
 | RQ7 | Πόσα δεδομένα από το δίκτυο-στόχο χρειάζονται για να ανακτηθεί η απόδοση που χάνεται μεταξύ δικτύων; | `adaptionstudy.py` |
-| RQ8 | Τι σημαίνουν οι μετρικές σε λειτουργικούς όρους: ακρίβεια των συναγερμών σε ρεαλιστική επικράτηση επιθέσεων, κατώφλια επιλεγμένα σε δεδομένα επικύρωσης, ταχύτητα και μέγεθος μοντέλου; | `operatingpoints.py`, `validated_selection.py` (`thresholds`), `deploymentbench.py` |
+| RQ8 | Τι σημαίνουν οι μετρικές σε λειτουργικούς όρους: ακρίβεια των συναγερμών σε ρεαλιστική επικράτηση επιθέσεων, κατώφλια επιλεγμένα σε δεδομένα επικύρωσης, ταχύτητα και μέγεθος μοντέλου; | `operatingpoints.py`, `valid_selection.py` (`thresholds`), `deploymentbench.py` |
 
 Η πλήρης συζήτηση κάθε ερωτήματος και της απάντησής του βρίσκεται στην πτυχιακή. Το αρχείο αυτό περιγράφει πώς εκτελούνται και αναπαράγονται τα πειράματα.
 
@@ -95,7 +95,7 @@ python src/extra_studies.py
 ```
 
 ```bash
-python src/validated_selection.py
+python src/valid_selection.py
 ```
 
 ```bash
@@ -484,7 +484,7 @@ CatBoost) βελτιστοποιούνται με **Optuna TPE**, 25 δοκιμ�
 
 Η κύρια εκτέλεση αναφέρει το καλύτερο μοντέλο και τα κατώφλια των σημείων λειτουργίας **στο test split**. Οι αριθμοί αυτοί
 είναι περιγραφικοί: η επιλογή στα ίδια δεδομένα στα οποία μετράται η βαθμολογία είναι αισιόδοξη. Το αυτόνομο script
-[`validated_selection.py`](validated_selection.py) επαναλαμβάνει και τις δύο επιλογές **μόνο σε δεδομένα εκπαίδευσης** και τις εφαρμόζει μία φορά στο test split:
+[`valid_selection.py`](valid_selection.py) επαναλαμβάνει και τις δύο επιλογές **μόνο σε δεδομένα εκπαίδευσης** και τις εφαρμόζει μία φορά στο test split:
 
 1. **Επιλογή μοντέλου με διασταυρούμενη επικύρωση.** Στρωματοποιημένη 5-fold CV σε 60.000 γραμμές εκπαίδευσης για τα RandomForest,
    ExtraTrees, XGBoost, LightGBM και CatBoost (το πρωτόκολλο του `extendedstudy.py` μέρος D). Επιλέγεται το μοντέλο
@@ -665,7 +665,7 @@ python src/extra_studies.py combined-tuning --trials 25 --tune-rows 30000
 python src/extra_studies.py ciciot-merge --train-cap 250000 --slow-cap 60000
 ```
 
-## `validated_selection.py` (αυτόνομο, εκτός `runfull.py`)
+## `valid_selection.py` (αυτόνομο, εκτός `runfull.py`)
 
 Επιλογή μοντέλου και κατωφλίου **χωρίς να κοιτάξει το test split** (βλ.
 [Επιλογή χωρίς το test split](#επιλογή-χωρίς-το-test-split)). Διαβάζει τα `results/`,
@@ -674,19 +674,19 @@ python src/extra_studies.py ciciot-merge --train-cap 250000 --slow-cap 60000
 `operating_points.json` και τα αποθηκευμένα δυαδικά μοντέλα).
 
 ```bash
-python src/validated_selection.py
+python src/valid_selection.py
 ```
 
 ```bash
-python src/validated_selection.py thresholds --datasets ton_iot iot23
+python src/valid_selection.py thresholds --datasets ton_iot iot23
 ```
 
 ```bash
-python src/validated_selection.py cv
+python src/valid_selection.py cv
 ```
 
 ```bash
-python src/validated_selection.py tables
+python src/valid_selection.py tables
 ```
 
 | Μέρος | Τι κάνει | Έξοδος |
@@ -733,7 +733,7 @@ python src/confirm_tuning_seeds.py --models RandomForest --tasks multiclass
 | `leakage_ablation.py` | `datasets` | `--models _` (RF, XGB, LGBM, CatBoost) |
 | `operatingpoints.py` | `datasets` | — |
 | `sanitycheck.py` | — | `--quiet` `--compare-archive RUN_ID` |
-| `validated_selection.py` | `parts` (thresholds cv tables) | `--datasets _` `--models _` `--cv-check DATASET` (ton_iot) |
+| `valid_selection.py` | `parts` (thresholds cv tables) | `--datasets _` `--models _` `--cv-check DATASET` (ton_iot) |
 | `confirm_tuning_seeds.py` | — | `--seeds _` (42 7 13 34) `--models _` (RandomForest XGBoost) `--tasks _` (multiclass binary) |
 
 # Streamlit monitor
@@ -804,7 +804,7 @@ pipeline τρέχει (το `checkpoint()` γράφει ατομικά μέσω 
 | Script | Διάρκεια |
 |---|---:|
 | `extra_studies.py` | ~3 ώ 30 λ |
-| `validated_selection.py` | ~1 ώ |
+| `valid_selection.py` | ~1 ώ |
 | `confirm_tuning_seeds.py` (10 σπόροι) | ~45 λ |
 
 # CUDA / GPU
@@ -1004,7 +1004,7 @@ src/
 │
 ├── results_extra/                    extra_studies.py: combined_tuning.json, ciciot_merge_study.json,
 │                                     table_combined_*.csv, table_ciciot_merge*.csv, figures/, models/
-├── results_validated/                validated_selection.py: operating_points_validated.json, cv_combined.json,
+├── results_validated/                valid_selection.py: operating_points_validated.json, cv_combined.json,
 │                                     table_operating_points_validated*.csv, table_best_models_cv.csv,
 │                                     table_best_models_evaluable_{random,temporal}.csv, split_audit.json, README.md
 ├── results_tuning_seeds/             confirm_tuning_seeds.py: tuning_seeds.csv, table_tuning_seeds_summary.csv,
@@ -1106,7 +1106,7 @@ prev is not None
 | Αρχείο | Ρόλος |
 |---|---|
 | [`extra_studies.py`](extra_studies.py) | Optuna στο `combined`, συγχώνευση DoS/DDoS στο CICIoT2023 → `results_extra/` |
-| [`validated_selection.py`](validated_selection.py) | Επιλογή μοντέλου με CV, κατώφλια out-of-fold, πίνακες καλύτερων μοντέλων μόνο με αξιολογήσιμα κελιά → `results_validated/` |
+| [`valid_selection.py`](valid_selection.py) | Επιλογή μοντέλου με CV, κατώφλια out-of-fold, πίνακες καλύτερων μοντέλων μόνο με αξιολογήσιμα κελιά → `results_validated/` |
 | [`confirm_tuning_seeds.py`](confirm_tuning_seeds.py) | Προεπιλογή έναντι βελτιστοποίησης στο `combined` σε 10 σπόρους → `results_tuning_seeds/` |
 
 ## Παραγωγή υλικού αναφοράς
@@ -1142,7 +1142,7 @@ prev is not None
 Το **`leakage_ablation`** ποσοτικοποιεί πόση από την απόδοση οφειλόταν στους αριθμούς θυρών,
 στα συγκεντρωτικά ανά IP του BoT-IoT και στα χαρακτηριστικά πλαισίου παραθύρου (πληροφορία που δεν γενικεύεται σε άλλο δίκτυο).
 
-**Επιλογή χωρίς το test split.** Το `validated_selection.py` επαναλαμβάνει την επιλογή μοντέλου (5-fold CV) και την
+**Επιλογή χωρίς το test split.** Το `valid_selection.py` επαναλαμβάνει την επιλογή μοντέλου (5-fold CV) και την
 επιλογή κατωφλίου (βαθμολογίες out-of-fold) μόνο σε δεδομένα εκπαίδευσης, και ελέγχει πριν από κάθε μέτρηση ότι
 αναπαράγει ακριβώς την καταγεγραμμένη ακρίβεια κάθε αποθηκευμένου μοντέλου. Βλ.
 [Επιλογή χωρίς το test split](#επιλογή-χωρίς-το-test-split).
@@ -1206,7 +1206,7 @@ python -c "import sys; sys.path.insert(0,'src'); from loaders import available_d
 `datasets/local_cache/` και χρειάζεται μέγεθος αρχείου +20%.
 
 **Μια αυτόνομη μελέτη δεν ξαναϋπολογίζει τίποτα**
-Τα `extra_studies.py`, `validated_selection.py` και `confirm_tuning_seeds.py` συνεχίζουν από τα αρχεία που υπάρχουν ήδη
+Τα `extra_studies.py`, `valid_selection.py` και `confirm_tuning_seeds.py` συνεχίζουν από τα αρχεία που υπάρχουν ήδη
 στον φάκελο εξόδου τους. Μετακινήστε τον φάκελο (ή διαγράψτε το συγκεκριμένο αρχείο) για να ξανατρέξει από την αρχή.
 
 **Θέλω να επιβεβαιώσω ότι όλα λειτουργούν πριν δεσμεύσω 20 ώρες**
