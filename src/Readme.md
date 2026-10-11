@@ -440,8 +440,7 @@ Random split, multiclass task (`results/all_results.json`). "Train" is after the
 **Tuning protocol** ([`tuning.py`](tuning.py)): the 4 strongest models (RandomForest, XGBoost, LightGBM,
 CatBoost) are tuned with **Optuna TPE**, 25 trials (the first 8 random), objective the mean macro-F1 of a
 **3-fold stratified CV on 30,000 training rows**, seed 42. The best configuration is refitted on the whole
-training split and compared with the default on the test split. If the refitted configuration is more than
-0.05 macro-F1 worse than the default, the search result is rejected and the default is kept. Tuned models
+training split and evaluated once on test split, where the default configuration is also reported for reference. Tuned models
 carry the suffix `__tuned`. `extra_studies.py` applies the same protocol to `combined`.
 
 ## Experiments
