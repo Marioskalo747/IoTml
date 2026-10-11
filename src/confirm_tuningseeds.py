@@ -72,8 +72,6 @@ def load_tuned():
         raise FileNotFoundError(f"{p} not found; run extra_studies.py first")
     out = {}
     for r in json.loads(p.read_text(encoding="utf-8")):
-        if r.get("tuned_fallback_to_default"):
-            continue  #rejected search
         #fixed best params + seed 42 scores 
         out[(r["task"], r["model"])] = {"params": r["best_params"], "f1_default": r["default"]["f1_macro"], "f1_tuned": r["tuned"]["f1_macro"]}
     return out
