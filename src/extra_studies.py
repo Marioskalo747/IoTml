@@ -105,7 +105,7 @@ def merge_into_all_results(records):
                                               "classes_missing_from_train", "min_train_per_class",
                                               "classes_undertrained", "fully_learnable", "n_features",
                                               "train_min_class_rows", "not_evaluable_reason", "labels_scored",
-                                              "n_labels_unscored", "tuned_fallback_to_default")}})
+                                              "n_labels_unscored")}})
         added += 1
     if added:
         #atomic write
@@ -184,8 +184,7 @@ def part_combined_tuning(args):
             d = rec["tuned"]["f1_macro"] - rec["default"]["f1_macro"]
             print(f"combined/{task}/{model}: default={rec['default']['f1_macro']:.4f} "
                   f"tuned={rec['tuned']['f1_macro']:.4f} ({d:+.4f}), cv={rec['best_cv_f1_macro']:.4f}, "
-                  f"{(time.perf_counter() - t0) / 60:.0f} min"
-                  + ("  [search rejected, default kept]" if rec["tuned_fallback_to_default"] else ""), flush=True)
+                  f"{(time.perf_counter() - t0) / 60:.0f} min", flush=True)
             gc.collect()
     if not records:
         print("no combined tuning records")
@@ -195,8 +194,7 @@ def part_combined_tuning(args):
                    "f1_default": r["default"]["f1_macro"], "f1_tuned": r["tuned"]["f1_macro"],
                    "delta_f1_macro": r["tuned"]["f1_macro"] - r["default"]["f1_macro"],
                    "best_cv_f1_macro": r["best_cv_f1_macro"], "tune_rows": r["tune_rows"],
-                   "train_rows": r["train_rows"], "tune_time_s": r["tune_time_s"],
-                   "fallback_to_default": bool(r["tuned_fallback_to_default"])} for r in records]
+                   "train_rows": r["train_rows"], "tune_time_s": r["tune_time_s"]} for r in records]
                  ).to_csv(args.out_dir / "table_combined_tuning.csv", index=False)
     print(f"written {out.name} and table_combined_tuning.csv ({len(records)} records), " f"models in {out.parent.name}/models/")
     champion_table(records, args.out_dir)
